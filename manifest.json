@@ -1,10 +1,10 @@
 {
-  "name": "Aile Merkezi",
-  "short_name": "Aile",
+  "name": "8th grade CORE - ES",
+  "short_name": "CORE-ES",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#FBF6EE",
-  "theme_color": "#C65A2E",
+  "background_color": "#fff8f4",
+  "theme_color": "#ffd7c2",
   "icons": [
     {
       "src": "favicon.svg",

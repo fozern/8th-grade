@@ -1,23 +1,35 @@
 (function () {
-  const STORAGE_KEY = "sule-aile-hub-v1";
+  const STORAGE_KEY = "core-es-v2";
+  const OLD_KEY = "sule-aile-hub-v1";
+  const SITE = "8th grade CORE - ES";
+  const HADITH =
+    "Amellerin Allah’a en sevimli olanı, az da olsa devamlı (istikrarlı) olanıdır.";
   const CATEGORIES = ["Market", "Fatura", "Sağlık", "Ulaşım", "Hediye", "Yemek", "Diğer"];
+  const WEEKS = fridaysUntilDec();
 
   const I18N = {
     tr: {
+      tag: "istişare · cetele · gündem",
+      home: "Home",
+      istisare: "İstişare notları",
+      mentor: "Mentor Cetele",
+      agenda: "Gündemler",
+      upcoming: "Upcoming",
+      ideas: "Ideas",
       family: "Aile",
-      subtitle: "Etkinlikler, cetele ve grafikler — çok basit.",
       events: "Etkinlikler",
       ledger: "Cetele",
-      upcoming: "Yaklaşanlar",
-      recent: "Son hareketler",
-      emptyEvents: "Henüz etkinlik yok. Bir tane ekleyin.",
-      emptyLedger: "Henüz kayıt yok. Excel gibi satır ekleyin.",
-      addEvent: "Etkinlik ekle",
-      addRow: "Satır ekle",
+      thisWeek: "Bu hafta",
+      weekGoal: "Bu haftanın goal'ü",
+      pinHere: "buraya pinle…",
+      notesHere: "notlarını buraya yaz…",
+      emptyList: "henüz yok — ekle.",
+      add: "Ekle",
       save: "Kaydet",
       cancel: "Vazgeç",
       delete: "Sil",
-      back: "Geri",
+      addEvent: "Etkinlik ekle",
+      addRow: "Satır ekle",
       exportCsv: "Excel'e aktar",
       importCsv: "Excel'den al",
       search: "Ara…",
@@ -37,28 +49,40 @@
       expenseTotal: "Gider",
       balance: "Bakiye",
       allFamily: "Tüm aile",
-      herPage: "Sayfasına gir",
-      herEvents: "Etkinlikleri",
-      herLedger: "Cetelesi",
-      byCategory: "Kategoriye göre",
-      byMonth: "Aylara göre",
+      herPage: "sayfası",
       open: "Aç",
+      byCategory: "Kategori",
+      byMonth: "Aylar",
+      emptyEvents: "etkinlik yok.",
+      emptyLedger: "satır yok.",
+      workOn: "Upcoming — çalışmamız gerekenler",
+      ideaPrompt: "bir idea yaz…",
+      agendaPrompt: "gündem ekle…",
+      workPrompt: "çalışılacak şey…",
+      doneOf: "haftalık goal",
     },
     en: {
+      tag: "notes · ledger · agenda",
+      home: "Home",
+      istisare: "İstişare notes",
+      mentor: "Mentor Cetele",
+      agenda: "Agenda",
+      upcoming: "Upcoming",
+      ideas: "Ideas",
       family: "Family",
-      subtitle: "Events, ledger and charts — kept very simple.",
       events: "Events",
       ledger: "Ledger",
-      upcoming: "Coming up",
-      recent: "Recent rows",
-      emptyEvents: "No events yet. Add one.",
-      emptyLedger: "No rows yet. Add a line like Excel.",
-      addEvent: "Add event",
-      addRow: "Add row",
+      thisWeek: "This week",
+      weekGoal: "This week's goal",
+      pinHere: "pin it here…",
+      notesHere: "write notes here…",
+      emptyList: "nothing yet — add one.",
+      add: "Add",
       save: "Save",
       cancel: "Cancel",
       delete: "Delete",
-      back: "Back",
+      addEvent: "Add event",
+      addRow: "Add row",
       exportCsv: "Export Excel",
       importCsv: "Import Excel",
       search: "Search…",
@@ -78,19 +102,54 @@
       expenseTotal: "Expense",
       balance: "Balance",
       allFamily: "Whole family",
-      herPage: "Open her page",
-      herEvents: "Her events",
-      herLedger: "Her ledger",
+      herPage: "her page",
+      open: "Open",
       byCategory: "By category",
       byMonth: "By month",
-      open: "Open",
+      emptyEvents: "no events.",
+      emptyLedger: "no rows.",
+      workOn: "Upcoming — things we should work on",
+      ideaPrompt: "write an idea…",
+      agendaPrompt: "add agenda…",
+      workPrompt: "something to work on…",
+      doneOf: "weekly goals",
     },
   };
 
-  const defaultState = function () {
+  function fridaysUntilDec() {
+    const out = [];
+    const d = new Date(2026, 8, 4);
+    const end = new Date(2026, 11, 25);
+    while (d <= end) {
+      out.push(iso(d));
+      d.setDate(d.getDate() + 7);
+    }
+    return out;
+  }
+
+  function iso(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function today() {
+    return iso(new Date());
+  }
+
+  function currentFriday() {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = day >= 5 ? day - 5 : day + 2;
+    const friday = new Date(now);
+    friday.setDate(now.getDate() - diff);
+    return iso(friday);
+  }
+
+  function defaultState() {
     return {
       lang: "tr",
-      title: "Aile Merkezi",
       sisters: [
         { id: "s1", name: "Abla 1" },
         { id: "s2", name: "Abla 2" },
@@ -98,24 +157,29 @@
       ],
       events: [],
       entries: [],
+      istisare: {},
+      weeklyGoal: "",
+      mentorGoals: {},
+      agenda: [],
+      work: [],
+      ideas: [],
     };
-  };
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_KEY);
+      if (!raw) return defaultState();
+      return Object.assign(defaultState(), JSON.parse(raw));
+    } catch (e) {
+      return defaultState();
+    }
+  }
 
   let state = load();
   let modal = null;
   let charts = [];
   let fileInput = null;
-
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return defaultState();
-      const data = JSON.parse(raw);
-      return Object.assign(defaultState(), data);
-    } catch (e) {
-      return defaultState();
-    }
-  }
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -129,13 +193,8 @@
     return Math.random().toString(36).slice(2, 10);
   }
 
-  function today() {
-    return new Date().toISOString().slice(0, 10);
-  }
-
   function money(n) {
-    const value = Number(n) || 0;
-    return value.toLocaleString(state.lang === "tr" ? "tr-TR" : "en-US", {
+    return (Number(n) || 0).toLocaleString(state.lang === "tr" ? "tr-TR" : "en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -150,12 +209,12 @@
   }
 
   function route() {
-    const hash = (location.hash || "#/").replace(/^#/, "");
-    const parts = hash.split("/").filter(Boolean);
-    if (parts[0] === "etkinlikler") return { page: "events" };
-    if (parts[0] === "cetele") return { page: "ledger", sisterId: parts[1] || null };
-    if (parts[0] === "abla" && parts[1]) return { page: "sister", sisterId: parts[1] };
-    return { page: "home" };
+    const parts = (location.hash || "#/").replace(/^#/, "").split("/").filter(Boolean);
+    const page = parts[0] || "home";
+    if (page === "abla") return { page: "sister", sisterId: parts[1] };
+    if (page === "cetele") return { page: "ledger", sisterId: parts[1] || null };
+    if (page === "etkinlikler") return { page: "events" };
+    return { page: page };
   }
 
   function sisterById(id) {
@@ -168,6 +227,24 @@
     if (!id || id === "aile") return t("allFamily");
     const sister = sisterById(id);
     return sister ? sister.name : t("allFamily");
+  }
+
+  function formatWeek(dateStr) {
+    const d = new Date(dateStr + "T12:00:00");
+    return d.toLocaleDateString(state.lang === "tr" ? "tr-TR" : "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      weekday: "long",
+    });
+  }
+
+  function monthLabel(dateStr) {
+    const d = new Date(dateStr + "T12:00:00");
+    return d.toLocaleDateString(state.lang === "tr" ? "tr-TR" : "en-US", {
+      month: "long",
+      year: "numeric",
+    });
   }
 
   function upcomingEvents(sisterId) {
@@ -213,105 +290,276 @@
     charts = [];
   }
 
+  function navLink(href, page, label) {
+    const view = route();
+    const on =
+      view.page === page ||
+      (page === "family" && (view.page === "family" || view.page === "events" || view.page === "ledger" || view.page === "sister"));
+    return '<a class="tab' + (on ? " on" : "") + '" href="' + href + '">' + label + "</a>";
+  }
+
   function render() {
     destroyCharts();
     const view = route();
-    const app = document.getElementById("app");
     const sister = view.sisterId ? sisterById(view.sisterId) : null;
-
+    const app = document.getElementById("app");
     app.innerHTML =
       '<div class="shell">' +
-      topbar(view, sister) +
-      (view.page === "home" ? homeView() : "") +
+      header() +
+      tabs() +
+      (view.page === "home" || view.page === "" ? homeView() : "") +
+      (view.page === "istisare" ? istisareView() : "") +
+      (view.page === "mentor" ? mentorView() : "") +
+      (view.page === "gundemler" ? checklistView("agenda", t("agenda"), t("agendaPrompt")) : "") +
+      (view.page === "upcoming" ? checklistView("work", t("workOn"), t("workPrompt")) : "") +
+      (view.page === "ideas" ? ideasView() : "") +
+      (view.page === "family" ? familyView() : "") +
       (view.page === "sister" ? sisterView(sister) : "") +
       (view.page === "events" ? eventsView() : "") +
       (view.page === "ledger" ? ledgerView(view.sisterId) : "") +
       "</div>" +
       (modal ? modalHtml() : "");
-
     bind(view, sister);
-    if (view.page === "home" || view.page === "sister" || view.page === "ledger") {
-      drawCharts(view.sisterId || null, view.page === "home");
+    if (view.page === "family" || view.page === "sister" || view.page === "ledger") {
+      drawCharts(view.sisterId || null, view.page === "family");
     }
   }
 
-  function topbar(view, sister) {
-    const heading =
-      view.page === "home"
-        ? escapeHtml(state.title)
-        : view.page === "events"
-          ? t("events")
-          : view.page === "ledger"
-            ? t("ledger")
-            : sister
-              ? escapeHtml(sister.name)
-              : t("family");
-
+  function header() {
     return (
-      '<div class="topbar">' +
-      '<a class="brand" href="#/">' +
-      '<div class="logo">A</div>' +
-      "<div><h1>" +
-      heading +
+      '<div class="top"><a class="brand" href="#/"><div class="mark">ES</div><div><h1>' +
+      SITE +
       "</h1><p>" +
-      t("subtitle") +
-      "</p></div></a>" +
-      '<div class="row">' +
-      '<div class="lang">' +
-      '<button data-lang="tr" class="' +
+      t("tag") +
+      '</p></div></a><div class="lang"><button data-lang="tr" class="' +
       (state.lang === "tr" ? "active" : "") +
-      '">TR</button>' +
-      '<button data-lang="en" class="' +
+      '">TR</button><button data-lang="en" class="' +
       (state.lang === "en" ? "active" : "") +
-      '">EN</button></div>' +
-      (view.page !== "home"
-        ? '<a class="btn secondary small" href="#/">' + t("back") + "</a>"
-        : "") +
-      "</div></div>"
+      '">EN</button></div></div>'
+    );
+  }
+
+  function tabs() {
+    return (
+      '<nav class="tabs">' +
+      navLink("#/", "home", t("home")) +
+      navLink("#/istisare", "istisare", t("istisare")) +
+      navLink("#/mentor", "mentor", t("mentor")) +
+      navLink("#/gundemler", "gundemler", t("agenda")) +
+      navLink("#/upcoming", "upcoming", t("upcoming")) +
+      navLink("#/ideas", "ideas", t("ideas")) +
+      navLink("#/family", "family", t("family")) +
+      "</nav>"
     );
   }
 
   function homeView() {
-    const next = upcomingEvents().slice(0, 5);
-    const recent = entriesFor().slice(0, 5);
-    const sum = totals(entriesFor());
-
+    const friday = currentFriday();
     return (
-      '<section class="hero">' +
-      '<input class="title-input" id="family-title" value="' +
-      escapeHtml(state.title) +
-      '" />' +
-      "<p class=\"lede\">" +
-      t("subtitle") +
-      "</p>" +
-      '<div class="row" style="margin-top:16px">' +
-      '<a class="btn" href="#/etkinlikler">' +
+      '<div class="hero">' +
+      '<section class="card hadith"><p>“' +
+      HADITH +
+      '”</p><small>(Buhari)</small></section>' +
+      '<section class="pin-wrap"><span class="pin"></span><p class="hand">' +
+      t("weekGoal") +
+      '</p><textarea id="weekly-goal" placeholder="' +
+      t("pinHere") +
+      '">' +
+      escapeHtml(state.weeklyGoal) +
+      "</textarea></section></div>" +
+      '<div class="home-grid">' +
+      '<a class="card jump peach" href="#/istisare"><span class="quiet">' +
+      t("thisWeek") +
+      "</span><b>" +
+      formatWeek(friday) +
+      "</b></a>" +
+      '<a class="card jump mint" href="#/gundemler"><span class="quiet">' +
+      t("agenda") +
+      "</span><b>" +
+      state.agenda.length +
+      "</b></a>" +
+      '<a class="card jump butter" href="#/upcoming"><span class="quiet">' +
+      t("upcoming") +
+      "</span><b>" +
+      state.work.filter(function (x) {
+        return !x.done;
+      }).length +
+      "</b></a></div>"
+    );
+  }
+
+  function istisareView() {
+    let lastMonth = "";
+    const now = currentFriday();
+    let html = "<h2>" + t("istisare") + "</h2><div class=\"weeks\">";
+    WEEKS.forEach(function (week) {
+      const month = monthLabel(week);
+      if (month !== lastMonth) {
+        html += '<div class="month">' + escapeHtml(month) + "</div>";
+        lastMonth = month;
+      }
+      html +=
+        '<section class="week' +
+        (week === now ? " now" : "") +
+        '"><div class="week-top"><b>' +
+        escapeHtml(formatWeek(week)) +
+        "</b>" +
+        (week === now ? '<span class="badge">' + t("thisWeek") + "</span>" : "") +
+        '</div><textarea data-istisare="' +
+        week +
+        '" placeholder="' +
+        t("notesHere") +
+        '">' +
+        escapeHtml(state.istisare[week] || "") +
+        "</textarea></section>";
+    });
+    return html + "</div>";
+  }
+
+  function mentorView() {
+    const done = WEEKS.filter(function (week) {
+      return state.mentorGoals[week] && state.mentorGoals[week].done;
+    }).length;
+    let html =
+      "<h2>" +
+      t("mentor") +
+      '</h2><div class="mentor-top"><section class="card hadith"><p>“' +
+      HADITH +
+      '”</p><small>(Buhari)</small></section><section class="pin-wrap"><span class="pin"></span><p class="hand">' +
+      t("weekGoal") +
+      '</p><textarea id="weekly-goal" placeholder="' +
+      t("pinHere") +
+      '">' +
+      escapeHtml(state.weeklyGoal) +
+      "</textarea></section></div><p class=\"tiny-progress\">" +
+      done +
+      " / " +
+      WEEKS.length +
+      " " +
+      t("doneOf") +
+      '</p><div class="weeks">';
+    WEEKS.forEach(function (week) {
+      const row = state.mentorGoals[week] || { text: "", done: false };
+      html +=
+        '<label class="item' +
+        (row.done ? " done" : "") +
+        '"><input type="checkbox" data-mentor-done="' +
+        week +
+        '" ' +
+        (row.done ? "checked" : "") +
+        " /><div style=\"flex:1\"><b>" +
+        escapeHtml(formatWeek(week)) +
+        '</b><textarea data-mentor-text="' +
+        week +
+        '" placeholder="' +
+        t("pinHere") +
+        '">' +
+        escapeHtml(row.text || "") +
+        "</textarea></div></label>";
+    });
+    return html + "</div>";
+  }
+
+  function checklistView(key, title, placeholder) {
+    const items = state[key];
+    return (
+      "<h2>" +
+      title +
+      '</h2><form class="addbar" data-add="' +
+      key +
+      '"><input name="title" placeholder="' +
+      placeholder +
+      '" required /><button class="btn" type="submit">' +
+      t("add") +
+      "</button></form>" +
+      (items.length
+        ? '<div class="list">' +
+          items
+            .map(function (item) {
+              return (
+                '<div class="item' +
+                (item.done ? " done" : "") +
+                '"><input type="checkbox" data-check="' +
+                key +
+                '" data-id="' +
+                item.id +
+                '" ' +
+                (item.done ? "checked" : "") +
+                ' /><input type="text" data-title="' +
+                key +
+                '" data-id="' +
+                item.id +
+                '" value="' +
+                escapeHtml(item.title) +
+                '" /><button class="btn light tiny" data-del="' +
+                key +
+                '" data-id="' +
+                item.id +
+                '">' +
+                t("delete") +
+                "</button></div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        : '<p class="empty">' + t("emptyList") + "</p>")
+    );
+  }
+
+  function ideasView() {
+    return (
+      "<h2>" +
+      t("ideas") +
+      '</h2><form class="addbar" data-add="ideas"><input name="title" placeholder="' +
+      t("ideaPrompt") +
+      '" required /><button class="btn pink" type="submit">' +
+      t("add") +
+      "</button></form>" +
+      (state.ideas.length
+        ? '<div class="home-grid">' +
+          state.ideas
+            .map(function (item) {
+              return (
+                '<div class="pin-wrap"><span class="pin"></span><textarea data-title="ideas" data-id="' +
+                item.id +
+                '">' +
+                escapeHtml(item.title) +
+                '</textarea><button class="btn light tiny" data-del="ideas" data-id="' +
+                item.id +
+                '">' +
+                t("delete") +
+                "</button></div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        : '<p class="empty">' + t("emptyList") + "</p>")
+    );
+  }
+
+  function familyView() {
+    const next = upcomingEvents().slice(0, 4);
+    const recent = entriesFor().slice(0, 4);
+    const sum = totals(entriesFor());
+    return (
+      "<h2>" +
+      t("family") +
+      '</h2><div class="row" style="margin-bottom:12px"><a class="btn" href="#/etkinlikler">' +
       t("events") +
-      "</a>" +
-      '<a class="btn secondary" href="#/cetele">' +
+      '</a><a class="btn light" href="#/cetele">' +
       t("ledger") +
-      "</a></div></section>" +
-      '<div class="grid">' +
+      "</a></div>" +
+      '<div class="grid3">' +
       state.sisters
-        .map(function (sister, i) {
-          const hers = totals(entriesFor(sister.id));
+        .map(function (sister) {
           return (
-            '<div class="card sister s' +
-            (i + 1) +
-            '">' +
-            '<div class="kicker">' +
+            '<div class="card jump peach"><span class="quiet">' +
             t("herPage") +
-            "</div>" +
-            '<input class="name-input" data-rename="' +
+            '</span><input class="name-input" data-rename="' +
             sister.id +
             '" value="' +
             escapeHtml(sister.name) +
-            '" />' +
-            '<div class="stat">' +
-            t("balance") +
-            ": " +
-            money(hers.balance) +
-            '</div><a class="btn small" href="#/abla/' +
+            '" style="border:0;background:transparent;font-weight:700;font-size:18px" /><a class="btn tiny" href="#/abla/' +
             sister.id +
             '">' +
             t("open") +
@@ -320,18 +568,15 @@
         })
         .join("") +
       "</div>" +
-      '<div class="cards">' +
-      '<section class="card"><div class="kicker">' +
-      t("upcoming") +
-      "</div>" +
+      '<div class="hero" style="margin-top:12px"><section class="card"><p class="quiet">' +
+      t("events") +
+      "</p>" +
       eventList(next) +
-      "</section>" +
-      '<section class="card"><div class="kicker">' +
-      t("recent") +
-      "</div>" +
-      '<div class="totals" style="grid-template-columns:1fr">' +
-      totalCard(t("balance"), sum.balance) +
-      "</div>" +
+      '</section><section class="card"><p class="quiet">' +
+      t("balance") +
+      ": " +
+      money(sum.balance) +
+      "</p>" +
       ledgerPreview(recent) +
       "</section></div>" +
       '<div class="charts">' +
@@ -347,33 +592,26 @@
     const rows = entriesFor(sister.id);
     const sum = totals(rows);
     return (
-      '<section class="hero">' +
-      '<input class="title-input" data-rename="' +
+      "<h2>" +
+      escapeHtml(sister.name) +
+      '</h2><input class="name-input" data-rename="' +
       sister.id +
       '" value="' +
       escapeHtml(sister.name) +
-      '" />' +
-      '<div class="row" style="margin-top:16px">' +
-      '<button class="btn" data-open-event="' +
+      '" style="border:0;background:transparent;font-size:22px;font-weight:700;margin-bottom:10px" />' +
+      '<div class="row" style="margin-bottom:12px"><button class="btn" data-open-event="' +
       sister.id +
       '">' +
       t("addEvent") +
-      "</button>" +
-      '<a class="btn secondary" href="#/cetele/' +
+      '</button><a class="btn light" href="#/cetele/' +
       sister.id +
       '">' +
       t("ledger") +
-      "</a></div></section>" +
+      "</a></div>" +
       totalsRow(sum) +
-      '<div class="cards">' +
-      '<section class="card"><div class="kicker">' +
-      t("herEvents") +
-      "</div>" +
+      '<div class="hero"><section class="card">' +
       eventList(next) +
-      "</section>" +
-      '<section class="card"><div class="kicker">' +
-      t("herLedger") +
-      "</div>" +
+      '</section><section class="card">' +
       ledgerPreview(rows.slice(0, 6)) +
       "</section></div>" +
       '<div class="charts">' +
@@ -386,12 +624,11 @@
   function eventsView() {
     const list = upcomingEvents();
     return (
-      '<div class="toolbar"><h2 class="page-title">' +
+      "<h2>" +
       t("events") +
-      '</h2><button class="btn" data-open-event="">' +
+      '</h2><div class="row" style="margin-bottom:12px"><button class="btn" data-open-event="">' +
       t("addEvent") +
-      "</button></div>" +
-      '<section class="card">' +
+      "</button></div><section class=\"card\">" +
       (list.length ? eventList(list, true) : '<p class="empty">' + t("emptyEvents") + "</p>") +
       "</section>"
     );
@@ -401,25 +638,20 @@
     const rows = entriesFor(sisterId);
     const sum = totals(rows);
     return (
-      '<div class="toolbar"><h2 class="page-title">' +
+      "<h2>" +
       t("ledger") +
       (sisterId ? " · " + escapeHtml(personLabel(sisterId)) : "") +
-      "</h2>" +
-      '<div class="row">' +
-      '<input id="search" placeholder="' +
+      '</h2><div class="row" style="margin-bottom:12px"><input id="search" placeholder="' +
       t("search") +
-      '" />' +
-      '<button class="btn" data-open-entry="' +
+      '" /><button class="btn" data-open-entry="' +
       (sisterId || "") +
       '">' +
       t("addRow") +
-      "</button>" +
-      '<button class="btn secondary" id="export">' +
+      '</button><button class="btn light" id="export">' +
       t("exportCsv") +
-      "</button>" +
-      '<button class="btn ghost" id="import">' +
+      '</button><button class="btn light" id="import">' +
       t("importCsv") +
-      "</button></div></div>" +
+      "</button></div>" +
       totalsRow(sum) +
       tableHtml(rows) +
       '<div class="charts">' +
@@ -440,12 +672,11 @@
   }
 
   function totalCard(label, value) {
-    const cls = value < 0 ? "neg" : "pos";
     return (
-      '<div class="total"><span class="kicker">' +
+      '<div class="total"><span class="quiet">' +
       label +
       '</span><b class="money ' +
-      cls +
+      (value < 0 ? "neg" : "pos") +
       '">' +
       money(value) +
       "</b></div>"
@@ -454,9 +685,9 @@
 
   function chartCard(id, label) {
     return (
-      '<section class="card"><div class="kicker">' +
+      '<section class="card"><p class="quiet">' +
       label +
-      '</div><div class="chart-box"><canvas id="' +
+      '</p><div class="chart-box"><canvas id="' +
       id +
       '"></canvas></div></section>'
     );
@@ -469,25 +700,23 @@
       events
         .map(function (event) {
           return (
-            '<div class="item">' +
-            "<div><b>" +
+            '<div class="item"><div><b>' +
             escapeHtml(event.title) +
-            "</b><span class=\"muted\">" +
+            '</b><div class="quiet">' +
             escapeHtml(event.date) +
             (event.time ? " · " + escapeHtml(event.time) : "") +
             " · " +
             escapeHtml(personLabel(event.who)) +
-            (event.place ? " · " + escapeHtml(event.place) : "") +
-            "</span></div>" +
+            "</div></div>" +
             (withActions
-              ? '<div class="row"><button class="btn ghost small" data-edit-event="' +
+              ? '<button class="btn light tiny" data-edit-event="' +
                 event.id +
-                '">✎</button><button class="btn danger small" data-del-event="' +
+                '">✎</button><button class="btn danger tiny" data-del-event="' +
                 event.id +
                 '">' +
                 t("delete") +
-                "</button></div>"
-              : '<a class="btn ghost small" href="#/etkinlikler">' + t("open") + "</a>") +
+                "</button>"
+              : '<a class="btn light tiny" href="#/etkinlikler">' + t("open") + "</a>") +
             "</div>"
           );
         })
@@ -506,15 +735,13 @@
           return (
             '<div class="item"><div><b>' +
             escapeHtml(row.desc) +
-            '</b><span class="muted">' +
+            '</b><div class="quiet">' +
             escapeHtml(row.date) +
-            " · " +
-            escapeHtml(row.category || "") +
-            '</span></div><div class="money ' +
+            "</div></div><b class=\"money " +
             (signed < 0 ? "neg" : "pos") +
             '">' +
             money(signed) +
-            "</div></div>"
+            "</b></div>"
           );
         })
         .join("") +
@@ -525,33 +752,41 @@
   function tableHtml(rows) {
     if (!rows.length) return '<p class="empty">' + t("emptyLedger") + "</p>";
     return (
-      '<div class="table-wrap"><table><thead><tr>' +
-      "<th>" + t("date") + "</th>" +
-      "<th>" + t("desc") + "</th>" +
-      "<th>" + t("category") + "</th>" +
-      "<th>" + t("who") + "</th>" +
-      "<th>" + t("type") + "</th>" +
-      "<th>" + t("amount") + "</th>" +
-      "<th></th></tr></thead><tbody>" +
+      '<div class="table-wrap"><table><thead><tr><th>' +
+      t("date") +
+      "</th><th>" +
+      t("desc") +
+      "</th><th>" +
+      t("category") +
+      "</th><th>" +
+      t("who") +
+      "</th><th>" +
+      t("type") +
+      "</th><th>" +
+      t("amount") +
+      "</th><th></th></tr></thead><tbody>" +
       rows
         .map(function (row) {
           return (
-            "<tr data-row=\"" +
+            "<tr><td><input data-edit=\"" +
             row.id +
-            '">' +
-            cellInput(row.id, "date", row.date, "date") +
-            cellInput(row.id, "desc", row.desc, "text") +
-            "<td>" +
+            '" data-field="date" type="date" value="' +
+            escapeHtml(row.date) +
+            '" /></td><td><input data-edit="' +
+            row.id +
+            '" data-field="desc" value="' +
+            escapeHtml(row.desc) +
+            '" /></td><td>' +
             categorySelect(row) +
-            "</td>" +
-            "<td>" +
+            "</td><td>" +
             whoSelect(row.who, row.id) +
-            "</td>" +
-            "<td>" +
+            "</td><td>" +
             typeSelect(row) +
-            "</td>" +
-            cellInput(row.id, "amount", row.amount, "number") +
-            '<td><button class="btn danger small" data-del-entry="' +
+            '</td><td><input data-edit="' +
+            row.id +
+            '" data-field="amount" type="number" value="' +
+            escapeHtml(row.amount) +
+            '" /></td><td><button class="btn danger tiny" data-del-entry="' +
             row.id +
             '">' +
             t("delete") +
@@ -563,33 +798,13 @@
     );
   }
 
-  function cellInput(id, field, value, type) {
-    return (
-      "<td><input data-edit=\"" +
-      id +
-      '" data-field="' +
-      field +
-      '" type="' +
-      type +
-      '" value="' +
-      escapeHtml(value) +
-      '" /></td>'
-    );
-  }
-
   function categorySelect(row) {
     return (
       '<select data-edit="' +
       row.id +
       '" data-field="category">' +
       CATEGORIES.map(function (cat) {
-        return (
-          '<option ' +
-          (row.category === cat ? "selected" : "") +
-          ">" +
-          cat +
-          "</option>"
-        );
+        return "<option " + (row.category === cat ? "selected" : "") + ">" + cat + "</option>";
       }).join("") +
       "</select>"
     );
@@ -599,14 +814,12 @@
     return (
       '<select data-edit="' +
       row.id +
-      '" data-field="type">' +
-      '<option value="gider" ' +
-      (row.type !== "gelir" ? "selected" : "") +
+      '" data-field="type"><option value="gider"' +
+      (row.type !== "gelir" ? " selected" : "") +
       ">" +
       t("expense") +
-      "</option>" +
-      '<option value="gelir" ' +
-      (row.type === "gelir" ? "selected" : "") +
+      '</option><option value="gelir"' +
+      (row.type === "gelir" ? " selected" : "") +
       ">" +
       t("income") +
       "</option></select>"
@@ -614,12 +827,11 @@
   }
 
   function whoSelect(current, rowId) {
-    const name = rowId ? "data-edit=\"" + rowId + '" data-field="who"' : 'name="who"';
+    const name = rowId ? 'data-edit="' + rowId + '" data-field="who"' : 'name="who"';
     return (
       "<select " +
       name +
-      ">" +
-      '<option value="aile"' +
+      '><option value="aile"' +
       (!current || current === "aile" ? " selected" : "") +
       ">" +
       t("allFamily") +
@@ -647,11 +859,14 @@
     return "";
   }
 
+  function field(label, control) {
+    return '<label class="field"><span>' + label + "</span>" + control + "</label>";
+  }
+
   function eventModal() {
     const event = modal.event;
     return (
-      '<div class="modal-back"><form class="modal" id="modal-form">' +
-      "<h2 class=\"page-title\">" +
+      '<div class="modal-back"><form class="modal" id="modal-form"><h2>' +
       t("addEvent") +
       "</h2>" +
       field(t("title"), '<input name="title" required value="' + escapeHtml(event.title) + '" />') +
@@ -662,10 +877,9 @@
       field(t("who"), whoSelect(event.who)) +
       field(t("place"), '<input name="place" value="' + escapeHtml(event.place) + '" />') +
       field(t("notes"), '<textarea name="notes">' + escapeHtml(event.notes) + "</textarea>") +
-      '<div class="row">' +
-      '<button class="btn" type="submit">' +
+      '<div class="row"><button class="btn" type="submit">' +
       t("save") +
-      '</button><button class="btn ghost" type="button" id="close-modal">' +
+      '</button><button class="btn light" type="button" id="close-modal">' +
       t("cancel") +
       "</button></div></form></div>"
     );
@@ -674,11 +888,9 @@
   function entryModal() {
     const row = modal.entry;
     return (
-      '<div class="modal-back"><form class="modal" id="modal-form">' +
-      "<h2 class=\"page-title\">" +
+      '<div class="modal-back"><form class="modal" id="modal-form"><h2>' +
       t("addRow") +
-      "</h2>" +
-      '<div class="form-grid">' +
+      "</h2><div class=\"form-grid\">" +
       field(t("date"), '<input name="date" type="date" required value="' + escapeHtml(row.date) + '" />') +
       field(t("amount"), '<input name="amount" type="number" step="0.01" required value="' + escapeHtml(row.amount) + '" />') +
       "</div>" +
@@ -706,14 +918,10 @@
       ) +
       '<div class="row"><button class="btn" type="submit">' +
       t("save") +
-      '</button><button class="btn ghost" type="button" id="close-modal">' +
+      '</button><button class="btn light" type="button" id="close-modal">' +
       t("cancel") +
       "</button></div></form></div>"
     );
-  }
-
-  function field(label, control) {
-    return '<label class="field"><span>' + label + "</span>" + control + "</label>";
   }
 
   function bind(view, sister) {
@@ -725,19 +933,89 @@
       };
     });
 
-    const title = document.getElementById("family-title");
-    if (title) {
-      title.onchange = function () {
-        state.title = title.value.trim() || "Aile Merkezi";
+    const weekly = document.getElementById("weekly-goal");
+    if (weekly) {
+      weekly.oninput = function () {
+        state.weeklyGoal = weekly.value;
         save();
       };
     }
 
-    document.querySelectorAll("[data-rename]").forEach(function (input) {
-      input.onclick = function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+    document.querySelectorAll("[data-istisare]").forEach(function (box) {
+      box.oninput = function () {
+        state.istisare[box.getAttribute("data-istisare")] = box.value;
+        save();
       };
+    });
+
+    document.querySelectorAll("[data-mentor-text]").forEach(function (box) {
+      box.oninput = function () {
+        const week = box.getAttribute("data-mentor-text");
+        state.mentorGoals[week] = Object.assign({ text: "", done: false }, state.mentorGoals[week], { text: box.value });
+        save();
+      };
+    });
+
+    document.querySelectorAll("[data-mentor-done]").forEach(function (box) {
+      box.onchange = function () {
+        const week = box.getAttribute("data-mentor-done");
+        state.mentorGoals[week] = Object.assign({ text: "", done: false }, state.mentorGoals[week], { done: box.checked });
+        save();
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-add]").forEach(function (form) {
+      form.onsubmit = function (e) {
+        e.preventDefault();
+        const key = form.getAttribute("data-add");
+        const title = String(new FormData(form).get("title") || "").trim();
+        if (!title) return;
+        state[key].push({ id: uid(), title: title, done: false });
+        save();
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-check]").forEach(function (box) {
+      box.onchange = function () {
+        const list = state[box.getAttribute("data-check")];
+        const item = list.find(function (x) {
+          return x.id === box.getAttribute("data-id");
+        });
+        if (item) {
+          item.done = box.checked;
+          save();
+          render();
+        }
+      };
+    });
+
+    document.querySelectorAll("[data-title]").forEach(function (input) {
+      input.oninput = function () {
+        const list = state[input.getAttribute("data-title")];
+        const item = list.find(function (x) {
+          return x.id === input.getAttribute("data-id");
+        });
+        if (item) {
+          item.title = input.value;
+          save();
+        }
+      };
+    });
+
+    document.querySelectorAll("[data-del]").forEach(function (btn) {
+      btn.onclick = function () {
+        const key = btn.getAttribute("data-del");
+        state[key] = state[key].filter(function (x) {
+          return x.id !== btn.getAttribute("data-id");
+        });
+        save();
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-rename]").forEach(function (input) {
       input.onchange = function () {
         const found = sisterById(input.getAttribute("data-rename"));
         if (found) {
@@ -817,10 +1095,12 @@
     if (importBtn) importBtn.onclick = importCsv;
 
     const close = document.getElementById("close-modal");
-    if (close) close.onclick = function () {
-      modal = null;
-      render();
-    };
+    if (close) {
+      close.onclick = function () {
+        modal = null;
+        render();
+      };
+    }
 
     const form = document.getElementById("modal-form");
     if (form) {
@@ -868,10 +1148,7 @@
   function openEvent(partial) {
     modal = {
       type: "event",
-      event: Object.assign(
-        { id: uid(), title: "", date: today(), time: "", who: "aile", place: "", notes: "" },
-        partial || {}
-      ),
+      event: Object.assign({ id: uid(), title: "", date: today(), time: "", who: "aile", place: "", notes: "" }, partial || {}),
     };
     render();
   }
@@ -879,10 +1156,7 @@
   function openEntry(partial) {
     modal = {
       type: "entry",
-      entry: Object.assign(
-        { id: uid(), date: today(), desc: "", category: "Diğer", who: "aile", type: "gider", amount: "" },
-        partial || {}
-      ),
+      entry: Object.assign({ id: uid(), date: today(), desc: "", category: "Diğer", who: "aile", type: "gider", amount: "" }, partial || {}),
     };
     render();
   }
@@ -897,9 +1171,11 @@
     const header = ["date", "desc", "category", "who", "type", "amount"];
     const lines = [header.join(",")].concat(
       state.entries.map(function (row) {
-        return header.map(function (key) {
-          return csvEscape(row[key]);
-        }).join(",");
+        return header
+          .map(function (key) {
+            return csvEscape(row[key]);
+          })
+          .join(",");
       })
     );
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -955,35 +1231,30 @@
     const catCanvas = document.getElementById("home-cat") || document.getElementById("s-cat") || document.getElementById("l-cat");
     const monthCanvas = document.getElementById("home-month") || document.getElementById("s-month") || document.getElementById("l-month");
     if (!catCanvas || !monthCanvas) return;
-
     const byCat = {};
     const byMonth = {};
     rows.forEach(function (row) {
       if (row.type === "gelir") return;
       const amount = Math.abs(Number(row.amount) || 0);
-      const cat = row.category || "Diğer";
-      byCat[cat] = (byCat[cat] || 0) + amount;
+      byCat[row.category || "Diğer"] = (byCat[row.category || "Diğer"] || 0) + amount;
       const month = (row.date || "").slice(0, 7) || "—";
       byMonth[month] = (byMonth[month] || 0) + amount;
     });
-
-    const colors = ["#c45c2c", "#4d6b50", "#3b6584", "#b8922a", "#9b2f23", "#6e6558", "#2f6b46"];
+    const colors = ["#ffc2c7", "#ffd7c2", "#cfeedd", "#ffe9a8", "#e25c5c", "#7a706c", "#2f7a4f"];
     charts.push(
       new Chart(catCanvas, {
         type: "doughnut",
-        data: {
-          labels: Object.keys(byCat),
-          datasets: [{ data: Object.values(byCat), backgroundColor: colors }],
-        },
+        data: { labels: Object.keys(byCat), datasets: [{ data: Object.values(byCat), backgroundColor: colors }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
       })
     );
+    const months = Object.keys(byMonth).sort();
     charts.push(
       new Chart(monthCanvas, {
         type: "bar",
         data: {
-          labels: Object.keys(byMonth).sort(),
-          datasets: [{ label: t("expense"), data: Object.keys(byMonth).sort().map(function (k) { return byMonth[k]; }), backgroundColor: "#c45c2c" }],
+          labels: months,
+          datasets: [{ label: t("expense"), data: months.map(function (k) { return byMonth[k]; }), backgroundColor: "#ffc2c7" }],
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
       })
