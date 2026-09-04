@@ -538,7 +538,7 @@ td select {
 }
 
 .sheet table {
-  min-width: 920px;
+  min-width: 1100px;
   border-collapse: collapse;
 }
 
@@ -590,6 +590,57 @@ td select {
   width: 54px;
   background: #fafafa;
   padding: 4px !important;
+}
+
+.sheet th.th-home {
+  background: #ffd6e8;
+  color: #c44d7a;
+  border-color: #f0b7cc;
+}
+
+.sheet th.th-kuran {
+  background: #fff1b8;
+  color: #8a6a12;
+  border-color: #ead48a;
+}
+
+.sheet td.sheet-home {
+  background: #fff6fa;
+  min-width: 128px;
+}
+
+.sheet td.sheet-home.on {
+  background: #ffe0ee;
+}
+
+.sheet td.sheet-kuran {
+  background: #fffbeb;
+  min-width: 150px;
+}
+
+.sheet td.sheet-kuran.on {
+  background: #e8f8ef;
+}
+
+.sheet select {
+  width: 100%;
+  border: 0;
+  padding: 8px 6px;
+  min-height: 38px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  color: inherit;
+}
+
+.sheet td.sheet-home.on select {
+  color: #c44d7a;
+}
+
+.sheet td.sheet-kuran.on select {
+  color: #2f7a4a;
 }
 
 .sheet-tabs {

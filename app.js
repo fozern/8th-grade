@@ -67,6 +67,12 @@
       addStudent: "Satır ekle",
       groupOf: "grubu",
       fillLater: "sonra doldur",
+      homeschool: "Homeschool",
+      kuran: "Kuran dersi alıyor mu",
+      coming: "geliyor ✿",
+      yes: "evet",
+      no: "hayır",
+      unset: "?",
       todayBtn: "Bugün",
       addEvent: "Etkinlik ekle",
       dayEvents: "Günün gündemi",
@@ -140,6 +146,12 @@
       addStudent: "Add row",
       groupOf: "group",
       fillLater: "fill later",
+      homeschool: "Homeschool",
+      kuran: "Quran class?",
+      coming: "coming ✿",
+      yes: "yes",
+      no: "no",
+      unset: "?",
       todayBtn: "Today",
       addEvent: "Add event",
       dayEvents: "That day's agenda",
@@ -206,8 +218,49 @@
       contacts: seedContacts(),
       calendarEvents: seedCalendar(),
       calendarSeeded: true,
+      homeschoolSeeded: true,
       gundemNotes: [],
     };
+  }
+
+  function normName(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/ı/g, "i")
+      .replace(/ğ/g, "g")
+      .replace(/ü/g, "u")
+      .replace(/ş/g, "s")
+      .replace(/ö/g, "o")
+      .replace(/ç/g, "c")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  function isHomeschoolName(name) {
+    const n = normName(name);
+    if (!n) return false;
+    const keys = [
+      "asuman peker",
+      "hatice temiz",
+      "hulya gonulalan",
+      "azra veli",
+      "zeynep bulut",
+      "leyla yilmaz",
+      "belinay timur",
+      "zehra tozcu",
+      "maryam mammadzada",
+      "jumana mayali",
+    ];
+    const parts = n.split(" ");
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    return keys.some(function (key) {
+      if (n === key || n.indexOf(key) !== -1) return true;
+      const kp = key.split(" ");
+      const kFirst = kp[0];
+      const kLast = kp[kp.length - 1];
+      return first === kFirst && (last.indexOf(kLast) === 0 || kLast.indexOf(last) === 0);
+    });
   }
 
   function contactRow(student, parent, notes) {
@@ -217,6 +270,8 @@
       parent: parent || "",
       phone: "",
       notes: notes || "",
+      homeschool: isHomeschoolName(student) ? "evet" : "",
+      kuran: "",
     };
   }
 
@@ -227,6 +282,8 @@
       parent: "",
       phone: "",
       notes: "",
+      homeschool: "",
+      kuran: "",
     };
   }
 
@@ -326,6 +383,23 @@
     { id: "yagmur", name: "Yağmur Sena", full: "Yağmur Sena Abla" },
   ];
 
+  function markHomeschool(contacts) {
+    GROUPS.forEach(function (group) {
+      ((contacts && contacts[group.id]) || []).forEach(function (row) {
+        if (isHomeschoolName(row.student)) row.homeschool = "evet";
+      });
+    });
+  }
+
+  function ensureContactFlags(contacts) {
+    GROUPS.forEach(function (group) {
+      ((contacts && contacts[group.id]) || []).forEach(function (row) {
+        if (row.homeschool == null) row.homeschool = "";
+        if (row.kuran == null) row.kuran = "";
+      });
+    });
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_KEY);
@@ -336,6 +410,11 @@
         if (rename[s.name]) s.name = rename[s.name];
       });
       if (!data.contacts || !data.contacts.asli) data.contacts = seedContacts();
+      if (!data.homeschoolSeeded) {
+        markHomeschool(data.contacts);
+        data.homeschoolSeeded = true;
+      }
+      ensureContactFlags(data.contacts);
       if (!data.calendarSeeded) {
         data.calendarEvents = seedCalendar();
         data.calendarSeeded = true;
@@ -358,6 +437,8 @@
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
+
+  save();
 
   function growBox(el) {
     if (!el) return;
@@ -578,9 +659,13 @@
       t("student") +
       "</th><th>B · " +
       t("parent") +
-      "</th><th>C · " +
+      "</th><th class=\"th-home\">C · " +
+      t("homeschool") +
+      "</th><th class=\"th-kuran\">D · " +
+      t("kuran") +
+      "</th><th>E · " +
       t("phone") +
-      "</th><th>D · " +
+      "</th><th>F · " +
       t("notes") +
       "</th><th></th></tr></thead><tbody>" +
       rows
@@ -591,6 +676,16 @@
             "</td>" +
             contactCell(group.id, row, "student", t("student")) +
             contactCell(group.id, row, "parent", t("parent")) +
+            contactSelect(group.id, row, "homeschool", [
+              ["", "—"],
+              ["evet", t("coming")],
+              ["hayir", t("no")],
+            ], row.homeschool === "evet" ? "sheet-home on" : "sheet-home") +
+            contactSelect(group.id, row, "kuran", [
+              ["", t("unset")],
+              ["evet", t("yes")],
+              ["hayir", t("no")],
+            ], row.kuran === "evet" ? "sheet-kuran on" : "sheet-kuran") +
             contactCell(group.id, row, "phone", t("phone")) +
             contactCell(group.id, row, "notes", t("notes")) +
             '<td class="sheet-del"><button class="btn light tiny" data-del-contact="' +
@@ -616,6 +711,34 @@
         );
       }).join("") +
       "</div>"
+    );
+  }
+
+  function contactSelect(groupId, row, field, options, tdClass) {
+    return (
+      '<td class="' +
+      (tdClass || "") +
+      '"><select data-contact="' +
+      row.id +
+      '" data-group="' +
+      groupId +
+      '" data-field="' +
+      field +
+      '">' +
+      options
+        .map(function (opt) {
+          return (
+            '<option value="' +
+            opt[0] +
+            '"' +
+            ((row[field] || "") === opt[0] ? " selected" : "") +
+            ">" +
+            opt[1] +
+            "</option>"
+          );
+        })
+        .join("") +
+      "</select></td>"
     );
   }
 
@@ -1583,7 +1706,7 @@
     });
 
     document.querySelectorAll("[data-contact]").forEach(function (el) {
-      el.oninput = function () {
+      const apply = function () {
         const group = el.getAttribute("data-group");
         const id = el.getAttribute("data-contact");
         const field = el.getAttribute("data-field");
@@ -1595,8 +1718,11 @@
           row[field] = el.value;
           save();
         }
-        growBox(el);
+        if (field === "homeschool" || field === "kuran") render();
+        else growBox(el);
       };
+      if (el.tagName === "SELECT") el.onchange = apply;
+      else el.oninput = apply;
     });
 
     const addContact = document.getElementById("add-contact");
@@ -1610,6 +1736,8 @@
           parent: "",
           phone: "",
           notes: "",
+          homeschool: "",
+          kuran: "",
         });
         save();
         render();
@@ -1889,10 +2017,10 @@
 
   function exportContactsCsv(groupId) {
     const group = groupById(groupId);
-    const header = ["student", "parent", "phone", "notes"];
+    const header = ["student", "parent", "homeschool", "kuran", "phone", "notes"];
     const lines = [header.join(",")].concat(
       ((state.contacts[group.id] || []).filter(function (row) {
-        return row.student || row.parent || row.phone || row.notes;
+        return row.student || row.parent || row.phone || row.notes || row.homeschool || row.kuran;
       })).map(function (row) {
         return header
           .map(function (key) {
