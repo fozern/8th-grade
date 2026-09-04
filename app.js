@@ -67,6 +67,19 @@
       addStudent: "Satır ekle",
       groupOf: "grubu",
       fillLater: "sonra doldur",
+      todayBtn: "Bugün",
+      addEvent: "Etkinlik ekle",
+      dayEvents: "Günün gündemi",
+      calNotes: "Notlar",
+      notePrompt: "gündem notu yaz…",
+      pinNote: "Pin",
+      tbd: "Tarihi yok / TBD",
+      whoGirls: "Girls",
+      whoAblalar: "Ablalar",
+      whoAbiler: "Abiler",
+      whoGenel: "Genel",
+      endDate: "Bitiş",
+      noDayEvents: "bu günde henüz yok — ekle.",
     },
     en: {
       tag: "notes · ledger · agenda",
@@ -127,6 +140,19 @@
       addStudent: "Add row",
       groupOf: "group",
       fillLater: "fill later",
+      todayBtn: "Today",
+      addEvent: "Add event",
+      dayEvents: "That day's agenda",
+      calNotes: "Notes",
+      notePrompt: "write an agenda note…",
+      pinNote: "Pin",
+      tbd: "No date / TBD",
+      whoGirls: "Girls",
+      whoAblalar: "Ablalar",
+      whoAbiler: "Abiler",
+      whoGenel: "General",
+      endDate: "End",
+      noDayEvents: "nothing this day yet — add one.",
     },
   };
 
@@ -178,6 +204,9 @@
       work: [],
       ideas: [],
       contacts: seedContacts(),
+      calendarEvents: seedCalendar(),
+      calendarSeeded: true,
+      gundemNotes: [],
     };
   }
 
@@ -250,6 +279,47 @@
     };
   }
 
+  function calItem(title, start, end, who) {
+    return {
+      id: "cal-" + start + "-" + title.replace(/[^a-zA-Z0-9]+/g, "-").slice(0, 28).toLowerCase(),
+      title: title,
+      start: start,
+      end: end || start,
+      who: who || "genel",
+      note: "",
+      tbd: !start,
+    };
+  }
+
+  function seedCalendar() {
+    return [
+      calItem("Kuran Academy", "2026-09-01", "2026-09-01", "genel"),
+      calItem("8th Grade Picnic — Girls", "2026-09-05", "2026-09-05", "girls"),
+      calItem("3 Aylar Reward Mentor Gezi — Abiler", "2026-09-06", "2026-09-07", "abiler"),
+      calItem("UVA & VCU Meetup Event — Ablalar", "2026-09-06", "2026-09-06", "ablalar"),
+      calItem("Mentor Yetiştirme Start — Abiler", "2026-09-08", "2026-09-08", "abiler"),
+      calItem("8th Grade Guiding Lights Zoom Classes Start — Girls", "2026-09-08", "2026-09-08", "girls"),
+      calItem("Uni Mentors Yetiştirme Start — Girls", "2026-09-10", "2026-09-10", "girls"),
+      calItem("6/7 Grade Guiding Lights Zoom Classes Start — Girls", "2026-09-10", "2026-09-10", "girls"),
+      calItem("Hızlandırılmış Yetiştirme Programı Starts — Lise Boys (9-11)", "2026-09-11", "2026-09-11", "abiler"),
+      calItem("Uni DC Trip — Girls", "2026-09-12", "2026-09-12", "girls"),
+      calItem("Dialogue Get Together", "2026-09-13", "2026-09-13", "genel"),
+      calItem("Parent Academy Starts", "2026-09-13", "2026-09-13", "genel"),
+      calItem("Mentor Yetiştirme Start — Ablalar", "2026-09-14", "2026-09-14", "ablalar"),
+      calItem("Afterschool Program Starts — Girls (8th Grade)", "2026-09-15", "2026-09-15", "girls"),
+      calItem("Mid-Atlantic High School Zoom Sohbets Start", "2026-09-16", "2026-09-16", "genel"),
+      calItem("New Mentor Training Starts — Girls", "2026-09-16", "2026-09-16", "girls"),
+      calItem("Miras Yolunda Yetiştirme Starts — Lise Girls (9-11)", "2026-09-18", "2026-09-18", "girls"),
+      calItem("JWF Programı — NY", "2026-09-21", "2026-09-23", "genel"),
+      calItem("LeadUp End of the Year Ceremony", "2026-09-24", "2026-09-24", "genel"),
+      calItem("High School Meetup #1", "2026-09-26", "2026-09-26", "genel"),
+      calItem("College Guidance Test (9th–11th Grades)", "2026-09-26", "2026-09-27", "genel"),
+      calItem("Cetele Day — Abiler", "2026-09-27", "2026-09-27", "abiler"),
+      calItem("Mid-Atlantik Middle School Zoom Sohbetleri", "", "", "genel"),
+      calItem("Uni Boys Events", "", "", "abiler"),
+    ];
+  }
+
   const GROUPS = [
     { id: "asli", name: "Asli", full: "Asli Abla" },
     { id: "nazlican", name: "Nazlican", full: "Nazlican Abla" },
@@ -266,6 +336,11 @@
         if (rename[s.name]) s.name = rename[s.name];
       });
       if (!data.contacts || !data.contacts.asli) data.contacts = seedContacts();
+      if (!data.calendarSeeded) {
+        data.calendarEvents = seedCalendar();
+        data.calendarSeeded = true;
+      }
+      if (!data.gundemNotes) data.gundemNotes = [];
       return data;
     } catch (e) {
       return defaultState();
@@ -276,6 +351,9 @@
   let modal = null;
   let charts = [];
   let fileInput = null;
+  let selectedDay = today();
+  let viewYear = 2026;
+  let viewMonth = 8;
 
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -413,14 +491,14 @@
     const app = document.getElementById("app");
     app.innerHTML =
       '<div class="shell' +
-      (view.page === "rehber" ? " wide" : "") +
+      (view.page === "rehber" || view.page === "gundemler" ? " wide" : "") +
       '">' +
       header() +
       tabs() +
       (view.page === "home" || view.page === "" ? homeView() : "") +
       (view.page === "istisare" ? istisareView() : "") +
       (view.page === "mentor" ? mentorView() : "") +
-      (view.page === "gundemler" ? checklistView("agenda", t("agenda"), t("agendaPrompt")) : "") +
+      (view.page === "gundemler" ? gundemView() : "") +
       (view.page === "upcoming" ? checklistView("work", t("workOn"), t("workPrompt")) : "") +
       (view.page === "ideas" ? ideasView() : "") +
       (view.page === "rehber" ? contactsView(view.groupId) : "") +
@@ -580,7 +658,7 @@
       '<a class="card jump mint" href="#/gundemler"><span class="quiet">' +
       t("agenda") +
       "</span><b>" +
-      state.agenda.length +
+      upcomingCal().length +
       "</b></a>" +
       '<a class="card jump butter" href="#/upcoming"><span class="quiet">' +
       t("upcoming") +
@@ -662,6 +740,229 @@
         "</textarea></div></label>";
     });
     return html + "</div>";
+  }
+
+  function whoLabel(who) {
+    if (who === "girls") return t("whoGirls");
+    if (who === "ablalar") return t("whoAblalar");
+    if (who === "abiler") return t("whoAbiler");
+    return t("whoGenel");
+  }
+
+  function whoClass(who) {
+    if (who === "girls") return "pink";
+    if (who === "ablalar") return "rose";
+    if (who === "abiler") return "blue";
+    return "ink";
+  }
+
+  function upcomingCal() {
+    const now = today();
+    return (state.calendarEvents || [])
+      .filter(function (event) {
+        if (event.tbd || !event.start) return false;
+        return (event.end || event.start) >= now;
+      })
+      .sort(function (a, b) {
+        return a.start.localeCompare(b.start);
+      });
+  }
+
+  function eventsOn(dateStr) {
+    return (state.calendarEvents || []).filter(function (event) {
+      if (event.tbd || !event.start) return false;
+      const end = event.end || event.start;
+      return event.start <= dateStr && dateStr <= end;
+    });
+  }
+
+  function tbdEvents() {
+    return (state.calendarEvents || []).filter(function (event) {
+      return event.tbd || !event.start;
+    });
+  }
+
+  function monthCells(y, m) {
+    const first = new Date(y, m, 1);
+    let pad = first.getDay();
+    pad = pad === 0 ? 6 : pad - 1;
+    const last = new Date(y, m + 1, 0).getDate();
+    const cells = [];
+    let i;
+    for (i = 0; i < pad; i++) cells.push(null);
+    for (i = 1; i <= last; i++) cells.push(i);
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }
+
+  function gundemView() {
+    const monthName = new Date(viewYear, viewMonth, 1).toLocaleDateString(state.lang === "tr" ? "tr-TR" : "en-US", {
+      month: "long",
+      year: "numeric",
+    });
+    const weekdays =
+      state.lang === "tr" ? ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const dayEvents = eventsOn(selectedDay);
+    const notes = (state.gundemNotes || []).slice().sort(function (a, b) {
+      return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+    });
+    const prettyDay = new Date(selectedDay + "T12:00:00").toLocaleDateString(state.lang === "tr" ? "tr-TR" : "en-US", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+
+    let html =
+      "<h2>" +
+      t("agenda") +
+      '</h2><section class="cal-wrap"><div class="cal-nav"><button class="btn light tiny" data-cal="prev">‹</button><b>' +
+      escapeHtml(monthName) +
+      '</b><button class="btn light tiny" data-cal="next">›</button><button class="btn tiny" data-cal="today">' +
+      t("todayBtn") +
+      '</button></div><div class="cal-week">' +
+      weekdays
+        .map(function (d) {
+          return "<span>" + d + "</span>";
+        })
+        .join("") +
+      '</div><div class="cal-grid">';
+
+    monthCells(viewYear, viewMonth).forEach(function (day) {
+      if (!day) {
+        html += '<div class="cal-cell empty"></div>';
+        return;
+      }
+      const dateStr = iso(new Date(viewYear, viewMonth, day));
+      const list = eventsOn(dateStr);
+      html +=
+        '<div class="cal-cell' +
+        (dateStr === today() ? " today" : "") +
+        (dateStr === selectedDay ? " on" : "") +
+        '" data-day="' +
+        dateStr +
+        '"><span class="cal-num">' +
+        day +
+        "</span>" +
+        list
+          .slice(0, 3)
+          .map(function (event) {
+            return (
+              '<span class="cal-chip ' +
+              whoClass(event.who) +
+              '" data-edit-cal="' +
+              event.id +
+              '">' +
+              escapeHtml(event.title) +
+              "</span>"
+            );
+          })
+          .join("") +
+        (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + "</span>" : "") +
+        "</div>";
+    });
+
+    html +=
+      '</div><div class="cal-legend"><span class="cal-chip girls-lg pink">' +
+      t("whoGirls") +
+      '</span><span class="cal-chip rose">' +
+      t("whoAblalar") +
+      '</span><span class="cal-chip blue">' +
+      t("whoAbiler") +
+      '</span><span class="cal-chip ink">' +
+      t("whoGenel") +
+      "</span></div></section>";
+
+    html +=
+      '<div class="gundem-cols"><section class="card"><div class="toolbar"><div><div class="quiet">' +
+      t("dayEvents") +
+      "</div><h3 style=\"margin:4px 0 0\">" +
+      escapeHtml(prettyDay) +
+      '</h3></div><button class="btn" data-open-cal="">' +
+      t("addEvent") +
+      "</button></div>" +
+      (dayEvents.length
+        ? '<div class="list">' +
+          dayEvents
+            .map(function (event) {
+              return (
+                '<div class="item cal-item"><span class="dot ' +
+                whoClass(event.who) +
+                '"></span><div><b>' +
+                escapeHtml(event.title) +
+                '</b><div class="quiet">' +
+                escapeHtml(whoLabel(event.who)) +
+                (event.start !== event.end ? " · " + event.start.slice(8) + "–" + event.end.slice(8) : "") +
+                "</div></div><button class=\"btn light tiny\" data-edit-cal=\"" +
+                event.id +
+                '">✎</button></div>'
+              );
+            })
+            .join("") +
+          "</div>"
+        : '<p class="empty">' + t("noDayEvents") + "</p>") +
+      "</section><section class=\"card notes-card\"><div class=\"toolbar\"><h3 style=\"margin:0\">" +
+      t("calNotes") +
+      '</h3></div><form class="addbar" data-add="gundemNotes"><textarea name="title" rows="1" placeholder="' +
+      t("notePrompt") +
+      '" required></textarea><button class="btn pink" type="submit">' +
+      t("add") +
+      "</button></form>" +
+      (notes.length
+        ? '<div class="list">' +
+          notes
+            .map(function (note) {
+              return (
+                '<div class="item' +
+                (note.done ? " done" : "") +
+                (note.pinned ? " pinned" : "") +
+                '"><input type="checkbox" data-check="gundemNotes" data-id="' +
+                note.id +
+                '" ' +
+                (note.done ? "checked" : "") +
+                ' /><textarea rows="1" data-title="gundemNotes" data-id="' +
+                note.id +
+                '">' +
+                escapeHtml(note.title) +
+                '</textarea><button class="btn light tiny" data-pin-note="' +
+                note.id +
+                '">' +
+                (note.pinned ? "★" : "☆") +
+                '</button><button class="btn light tiny" data-del="gundemNotes" data-id="' +
+                note.id +
+                '">' +
+                t("delete") +
+                "</button></div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        : '<p class="empty">' + t("emptyList") + "</p>") +
+      "</section></div>";
+
+    const tbd = tbdEvents();
+    html +=
+      '<section class="card" style="margin-top:12px"><div class="quiet">' +
+      t("tbd") +
+      "</div>" +
+      (tbd.length
+        ? '<div class="list" style="margin-top:8px">' +
+          tbd
+            .map(function (event) {
+              return (
+                '<div class="item"><span class="dot ' +
+                whoClass(event.who) +
+                '"></span><div><b>' +
+                escapeHtml(event.title) +
+                "</b></div><button class=\"btn light tiny\" data-edit-cal=\"" +
+                event.id +
+                '">✎</button></div>'
+              );
+            })
+            .join("") +
+          "</div>"
+        : '<p class="empty">' + t("emptyList") + "</p>") +
+      "</section>";
+    return html;
   }
 
   function checklistView(key, title, placeholder) {
@@ -1060,11 +1361,63 @@
   function modalHtml() {
     if (modal.type === "event") return eventModal();
     if (modal.type === "entry") return entryModal();
+    if (modal.type === "cal") return calModal();
     return "";
   }
 
   function field(label, control) {
     return '<label class="field"><span>' + label + "</span>" + control + "</label>";
+  }
+
+  function calWhoSelect(current) {
+    const opts = [
+      ["genel", t("whoGenel")],
+      ["girls", t("whoGirls")],
+      ["ablalar", t("whoAblalar")],
+      ["abiler", t("whoAbiler")],
+    ];
+    return (
+      '<select name="who">' +
+      opts
+        .map(function (opt) {
+          return (
+            '<option value="' +
+            opt[0] +
+            '"' +
+            (current === opt[0] ? " selected" : "") +
+            ">" +
+            opt[1] +
+            "</option>"
+          );
+        })
+        .join("") +
+      "</select>"
+    );
+  }
+
+  function calModal() {
+    const event = modal.event;
+    return (
+      '<div class="modal-back"><form class="modal" id="modal-form"><h2>' +
+      t("addEvent") +
+      "</h2>" +
+      field(t("title"), '<input name="title" required value="' + escapeHtml(event.title) + '" />') +
+      '<div class="form-grid">' +
+      field(t("date"), '<input name="start" type="date" value="' + escapeHtml(event.start || "") + '" />') +
+      field(t("endDate"), '<input name="end" type="date" value="' + escapeHtml(event.end || event.start || "") + '" />') +
+      "</div>" +
+      field(t("who"), calWhoSelect(event.who || "genel")) +
+      field(t("notes"), '<textarea name="note">' + escapeHtml(event.note || "") + "</textarea>") +
+      '<div class="row"><button class="btn" type="submit">' +
+      t("save") +
+      '</button><button class="btn light" type="button" id="close-modal">' +
+      t("cancel") +
+      "</button>" +
+      (event.id
+        ? '<button class="btn danger" type="button" id="del-cal" data-id="' + event.id + '">' + t("delete") + "</button>"
+        : "") +
+      "</div></form></div>"
+    );
   }
 
   function eventModal() {
@@ -1184,7 +1537,7 @@
         const key = form.getAttribute("data-add");
         const title = String(new FormData(form).get("title") || "").trim();
         if (!title) return;
-        state[key].push({ id: uid(), title: title, done: false });
+        state[key].push({ id: uid(), title: title, done: false, pinned: false });
         save();
         render();
       };
@@ -1369,6 +1722,81 @@
       };
     }
 
+    document.querySelectorAll("[data-cal]").forEach(function (btn) {
+      btn.onclick = function () {
+        const act = btn.getAttribute("data-cal");
+        if (act === "prev") {
+          viewMonth -= 1;
+          if (viewMonth < 0) {
+            viewMonth = 11;
+            viewYear -= 1;
+          }
+        } else if (act === "next") {
+          viewMonth += 1;
+          if (viewMonth > 11) {
+            viewMonth = 0;
+            viewYear += 1;
+          }
+        } else {
+          const now = new Date();
+          viewYear = now.getFullYear();
+          viewMonth = now.getMonth();
+          selectedDay = today();
+        }
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-day]").forEach(function (el) {
+      el.onclick = function (e) {
+        if (e.target.closest("[data-edit-cal]")) return;
+        selectedDay = el.getAttribute("data-day");
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-open-cal]").forEach(function (btn) {
+      btn.onclick = function () {
+        openCal({ start: selectedDay, end: selectedDay });
+      };
+    });
+
+    document.querySelectorAll("[data-edit-cal]").forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        const event = (state.calendarEvents || []).find(function (item) {
+          return item.id === btn.getAttribute("data-edit-cal");
+        });
+        if (event) openCal(event);
+      };
+    });
+
+    document.querySelectorAll("[data-pin-note]").forEach(function (btn) {
+      btn.onclick = function () {
+        const note = (state.gundemNotes || []).find(function (item) {
+          return item.id === btn.getAttribute("data-pin-note");
+        });
+        if (note) {
+          note.pinned = !note.pinned;
+          save();
+          render();
+        }
+      };
+    });
+
+    const delCal = document.getElementById("del-cal");
+    if (delCal) {
+      delCal.onclick = function () {
+        const id = delCal.getAttribute("data-id");
+        state.calendarEvents = (state.calendarEvents || []).filter(function (item) {
+          return item.id !== id;
+        });
+        modal = null;
+        save();
+        render();
+      };
+    }
+
     const form = document.getElementById("modal-form");
     if (form) {
       form.onsubmit = function (e) {
@@ -1389,6 +1817,24 @@
           });
           if (idx >= 0) state.events[idx] = next;
           else state.events.push(next);
+        } else if (modal.type === "cal") {
+          const start = String(data.get("start") || "").trim();
+          const end = String(data.get("end") || start).trim() || start;
+          const next = {
+            id: modal.event.id || uid(),
+            title: String(data.get("title") || "").trim(),
+            start: start,
+            end: end,
+            who: String(data.get("who") || "genel"),
+            note: String(data.get("note") || ""),
+            tbd: !start,
+          };
+          if (!state.calendarEvents) state.calendarEvents = [];
+          const idx = state.calendarEvents.findIndex(function (item) {
+            return item.id === next.id;
+          });
+          if (idx >= 0) state.calendarEvents[idx] = next;
+          else state.calendarEvents.push(next);
         } else {
           const next = {
             id: modal.entry.id || uid(),
@@ -1412,6 +1858,17 @@
     }
 
     growAll();
+  }
+
+  function openCal(partial) {
+    modal = {
+      type: "cal",
+      event: Object.assign(
+        { id: "", title: "", start: selectedDay, end: selectedDay, who: "genel", note: "", tbd: false },
+        partial || {}
+      ),
+    };
+    render();
   }
 
   function openEvent(partial) {
