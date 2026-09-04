@@ -185,6 +185,16 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
+  function growBox(el) {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
+  function growAll() {
+    document.querySelectorAll("textarea").forEach(growBox);
+  }
+
   function t(key) {
     return (I18N[state.lang] || I18N.tr)[key] || key;
   }
@@ -467,9 +477,9 @@
       title +
       '</h2><form class="addbar" data-add="' +
       key +
-      '"><input name="title" placeholder="' +
+      '"><textarea name="title" rows="1" placeholder="' +
       placeholder +
-      '" required /><button class="btn" type="submit">' +
+      '" required></textarea><button class="btn" type="submit">' +
       t("add") +
       "</button></form>" +
       (items.length
@@ -485,13 +495,13 @@
                 item.id +
                 '" ' +
                 (item.done ? "checked" : "") +
-                ' /><input type="text" data-title="' +
+                ' /><textarea rows="1" data-title="' +
                 key +
                 '" data-id="' +
                 item.id +
-                '" value="' +
+                '">' +
                 escapeHtml(item.title) +
-                '" /><button class="btn light tiny" data-del="' +
+                '</textarea><button class="btn light tiny" data-del="' +
                 key +
                 '" data-id="' +
                 item.id +
@@ -510,9 +520,9 @@
     return (
       "<h2>" +
       t("ideas") +
-      '</h2><form class="addbar" data-add="ideas"><input name="title" placeholder="' +
+      '</h2><form class="addbar" data-add="ideas"><textarea name="title" rows="1" placeholder="' +
       t("ideaPrompt") +
-      '" required /><button class="btn pink" type="submit">' +
+      '" required></textarea><button class="btn pink" type="submit">' +
       t("add") +
       "</button></form>" +
       (state.ideas.length
@@ -938,6 +948,7 @@
       weekly.oninput = function () {
         state.weeklyGoal = weekly.value;
         save();
+        growBox(weekly);
       };
     }
 
@@ -945,6 +956,7 @@
       box.oninput = function () {
         state.istisare[box.getAttribute("data-istisare")] = box.value;
         save();
+        growBox(box);
       };
     });
 
@@ -953,6 +965,7 @@
         const week = box.getAttribute("data-mentor-text");
         state.mentorGoals[week] = Object.assign({ text: "", done: false }, state.mentorGoals[week], { text: box.value });
         save();
+        growBox(box);
       };
     });
 
@@ -966,6 +979,12 @@
     });
 
     document.querySelectorAll("[data-add]").forEach(function (form) {
+      const box = form.querySelector("textarea, input");
+      if (box) {
+        box.oninput = function () {
+          growBox(box);
+        };
+      }
       form.onsubmit = function (e) {
         e.preventDefault();
         const key = form.getAttribute("data-add");
@@ -1001,6 +1020,7 @@
           item.title = input.value;
           save();
         }
+        growBox(input);
       };
     });
 
@@ -1143,6 +1163,8 @@
         render();
       };
     }
+
+    growAll();
   }
 
   function openEvent(partial) {
@@ -1262,5 +1284,6 @@
   }
 
   window.addEventListener("hashchange", render);
+  window.addEventListener("resize", growAll);
   render();
 })();
