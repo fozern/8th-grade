@@ -526,6 +526,99 @@ td select {
   margin: 0 0 10px;
 }
 
+.shell.wide {
+  max-width: 1080px;
+}
+
+.sheet {
+  border: 1px solid #c9c9c9;
+  background: #fff;
+  border-radius: 8px 8px 0 0;
+  overflow: auto;
+}
+
+.sheet table {
+  min-width: 920px;
+  border-collapse: collapse;
+}
+
+.sheet th {
+  background: #e8f0dc;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #c5cbb8;
+  padding: 8px;
+  position: sticky;
+  top: 0;
+}
+
+.sheet td {
+  border: 1px solid #d8d8d8;
+  padding: 0;
+  vertical-align: top;
+  background: #fff;
+}
+
+.sheet .num {
+  width: 40px;
+  text-align: center;
+  background: #f4f4f4;
+  color: #888;
+  font-size: 12px;
+  padding: 8px 4px;
+}
+
+.sheet textarea {
+  width: 100%;
+  border: 0;
+  padding: 8px;
+  min-height: 38px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.45;
+  background: transparent;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sheet tr:focus-within td {
+  box-shadow: inset 0 0 0 2px #217346;
+}
+
+.sheet-del {
+  width: 54px;
+  background: #fafafa;
+  padding: 4px !important;
+}
+
+.sheet-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  background: #efefef;
+  border: 1px solid #c9c9c9;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  padding: 8px 8px 0;
+}
+
+.sheet-tab {
+  background: #f7f7f7;
+  border: 1px solid #c9c9c9;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.sheet-tab.on {
+  background: #fff;
+  border-top: 3px solid #217346;
+  color: #217346;
+}
+
 @media (max-width: 800px) {
   .hero,
   .home-grid,

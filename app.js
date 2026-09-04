@@ -60,6 +60,13 @@
       agendaPrompt: "gündem ekle…",
       workPrompt: "çalışılacak şey…",
       doneOf: "haftalık goal",
+      contacts: "Rehber",
+      student: "Öğrenci",
+      parent: "Veli (Anne)",
+      phone: "Telefon",
+      addStudent: "Satır ekle",
+      groupOf: "grubu",
+      fillLater: "sonra doldur",
     },
     en: {
       tag: "notes · ledger · agenda",
@@ -113,6 +120,13 @@
       agendaPrompt: "add agenda…",
       workPrompt: "something to work on…",
       doneOf: "weekly goals",
+      contacts: "Contacts",
+      student: "Student",
+      parent: "Parent (Mom)",
+      phone: "Phone",
+      addStudent: "Add row",
+      groupOf: "group",
+      fillLater: "fill later",
     },
   };
 
@@ -151,9 +165,9 @@
     return {
       lang: "tr",
       sisters: [
-        { id: "s1", name: "Abla 1" },
-        { id: "s2", name: "Abla 2" },
-        { id: "s3", name: "Abla 3" },
+        { id: "s1", name: "Asli" },
+        { id: "s2", name: "Nazlican" },
+        { id: "s3", name: "Yağmur Sena" },
       ],
       events: [],
       entries: [],
@@ -163,14 +177,96 @@
       agenda: [],
       work: [],
       ideas: [],
+      contacts: seedContacts(),
     };
   }
+
+  function contactRow(student, parent, notes) {
+    return {
+      id: "c-" + String(student || Math.random()).toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      student: student || "",
+      parent: parent || "",
+      phone: "",
+      notes: notes || "",
+    };
+  }
+
+  function emptyContact(prefix, n) {
+    return {
+      id: prefix + "-blank-" + n,
+      student: "",
+      parent: "",
+      phone: "",
+      notes: "",
+    };
+  }
+
+  function padGroup(rows, prefix) {
+    const extra = [];
+    for (let i = 1; i <= 5; i++) extra.push(emptyContact(prefix, i));
+    return rows.concat(extra);
+  }
+
+  function seedContacts() {
+    return {
+      asli: padGroup(
+        [
+          contactRow("Ayse Seymen", "Şule Seymen", "Kayıtta: Ayse Ulusoy"),
+          contactRow("Leyla Yilmaz", "Lale Cebeci", ""),
+          contactRow("Hatice Betul Temizoz", "Aysenur Temiz", "Kayıtta: Hatice Temiz"),
+          contactRow("Zeynep Bulut", "Metanet Bulut", ""),
+          contactRow("Zeynep Gollu", "Merve Gollu", "Tuesday conflict"),
+          contactRow("Asuman Peker", "", "homeschool signup?"),
+          contactRow("Seniha Top", "Bahti T", "Kayıtta: Seniha T"),
+          contactRow("Nil Yildiz", "", "bire bir lazım olabilir"),
+        ],
+        "asli"
+      ),
+      nazlican: padGroup(
+        [
+          contactRow("Elif Mammadzada", "", "konuştuktan sonra yapacak"),
+          contactRow("Dilek Mirzalizade", "", ""),
+          contactRow("Zahra Zeynal", "", "yapacak"),
+          contactRow("Azra Veli", "Elif Veli", ""),
+          contactRow("Bahar Tasdogan", "", ""),
+          contactRow("Melisa Gokce", "", "yapacak"),
+          contactRow("Hulya Gonulalan", "Arzu Karaman Gonulalan", ""),
+        ],
+        "nazlican"
+      ),
+      yagmur: padGroup(
+        [
+          contactRow("Belinay Timur", "", ""),
+          contactRow("Zehra Tozcu", "Elife Tozcu", ""),
+          contactRow("Selma Sakin", "Fatma Sakin", ""),
+          contactRow("Gulce Gurel", "Zekiye Gurel", "sibling olarak kayıtlı"),
+          contactRow("Irem Sahin", "", "veli adı eklenecek"),
+          contactRow("Jumana Mayali", "Nada Dawood", ""),
+          contactRow("Maryam Mammadzada", "", "cuma 12:00 özel"),
+          contactRow("Pinar Dogan", "", "elden verecek"),
+        ],
+        "yagmur"
+      ),
+    };
+  }
+
+  const GROUPS = [
+    { id: "asli", name: "Asli", full: "Asli Abla" },
+    { id: "nazlican", name: "Nazlican", full: "Nazlican Abla" },
+    { id: "yagmur", name: "Yağmur Sena", full: "Yağmur Sena Abla" },
+  ];
 
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_KEY);
       if (!raw) return defaultState();
-      return Object.assign(defaultState(), JSON.parse(raw));
+      const data = Object.assign(defaultState(), JSON.parse(raw));
+      const rename = { "Abla 1": "Asli", "Abla 2": "Nazlican", "Abla 3": "Yağmur Sena" };
+      (data.sisters || []).forEach(function (s) {
+        if (rename[s.name]) s.name = rename[s.name];
+      });
+      if (!data.contacts || !data.contacts.asli) data.contacts = seedContacts();
+      return data;
     } catch (e) {
       return defaultState();
     }
@@ -224,6 +320,7 @@
     if (page === "abla") return { page: "sister", sisterId: parts[1] };
     if (page === "cetele") return { page: "ledger", sisterId: parts[1] || null };
     if (page === "etkinlikler") return { page: "events" };
+    if (page === "rehber") return { page: "rehber", groupId: parts[1] || "asli" };
     return { page: page };
   }
 
@@ -304,7 +401,8 @@
     const view = route();
     const on =
       view.page === page ||
-      (page === "family" && (view.page === "family" || view.page === "events" || view.page === "ledger" || view.page === "sister"));
+      (page === "family" && (view.page === "family" || view.page === "events" || view.page === "ledger" || view.page === "sister")) ||
+      (page === "rehber" && view.page === "rehber");
     return '<a class="tab' + (on ? " on" : "") + '" href="' + href + '">' + label + "</a>";
   }
 
@@ -314,7 +412,9 @@
     const sister = view.sisterId ? sisterById(view.sisterId) : null;
     const app = document.getElementById("app");
     app.innerHTML =
-      '<div class="shell">' +
+      '<div class="shell' +
+      (view.page === "rehber" ? " wide" : "") +
+      '">' +
       header() +
       tabs() +
       (view.page === "home" || view.page === "" ? homeView() : "") +
@@ -323,6 +423,7 @@
       (view.page === "gundemler" ? checklistView("agenda", t("agenda"), t("agendaPrompt")) : "") +
       (view.page === "upcoming" ? checklistView("work", t("workOn"), t("workPrompt")) : "") +
       (view.page === "ideas" ? ideasView() : "") +
+      (view.page === "rehber" ? contactsView(view.groupId) : "") +
       (view.page === "family" ? familyView() : "") +
       (view.page === "sister" ? sisterView(sister) : "") +
       (view.page === "events" ? eventsView() : "") +
@@ -358,8 +459,101 @@
       navLink("#/gundemler", "gundemler", t("agenda")) +
       navLink("#/upcoming", "upcoming", t("upcoming")) +
       navLink("#/ideas", "ideas", t("ideas")) +
+      navLink("#/rehber/asli", "rehber", t("contacts")) +
       navLink("#/family", "family", t("family")) +
       "</nav>"
+    );
+  }
+
+  function groupById(id) {
+    return (
+      GROUPS.find(function (g) {
+        return g.id === id;
+      }) || GROUPS[0]
+    );
+  }
+
+  function contactsView(groupId) {
+    const group = groupById(groupId);
+    const rows = (state.contacts && state.contacts[group.id]) || [];
+    return (
+      "<h2>" +
+      escapeHtml(group.full) +
+      " " +
+      t("groupOf") +
+      '</h2><p class="quiet" style="margin:0 0 10px">' +
+      t("student") +
+      " + " +
+      t("parent") +
+      " — " +
+      t("fillLater") +
+      '</p><div class="row" style="margin-bottom:10px"><button class="btn" id="add-contact" data-group="' +
+      group.id +
+      '">' +
+      t("addStudent") +
+      '</button><button class="btn light" id="export-contacts" data-group="' +
+      group.id +
+      '">' +
+      t("exportCsv") +
+      "</button></div>" +
+      '<div class="sheet"><table><thead><tr><th class="num"></th><th>A · ' +
+      t("student") +
+      "</th><th>B · " +
+      t("parent") +
+      "</th><th>C · " +
+      t("phone") +
+      "</th><th>D · " +
+      t("notes") +
+      "</th><th></th></tr></thead><tbody>" +
+      rows
+        .map(function (row, i) {
+          return (
+            "<tr><td class=\"num\">" +
+            (i + 1) +
+            "</td>" +
+            contactCell(group.id, row, "student", t("student")) +
+            contactCell(group.id, row, "parent", t("parent")) +
+            contactCell(group.id, row, "phone", t("phone")) +
+            contactCell(group.id, row, "notes", t("notes")) +
+            '<td class="sheet-del"><button class="btn light tiny" data-del-contact="' +
+            row.id +
+            '" data-group="' +
+            group.id +
+            '">' +
+            t("delete") +
+            "</button></td></tr>"
+          );
+        })
+        .join("") +
+      '</tbody></table></div><div class="sheet-tabs">' +
+      GROUPS.map(function (g) {
+        return (
+          '<a class="sheet-tab' +
+          (g.id === group.id ? " on" : "") +
+          '" href="#/rehber/' +
+          g.id +
+          '">' +
+          escapeHtml(g.name) +
+          "</a>"
+        );
+      }).join("") +
+      "</div>"
+    );
+  }
+
+  function contactCell(groupId, row, field, placeholder) {
+    return (
+      "<td><textarea rows=\"1\" data-contact=\"" +
+      row.id +
+      '" data-group="' +
+      groupId +
+      '" data-field="' +
+      field +
+      '" placeholder="' +
+      placeholder +
+      '">' +
+      escapeHtml(row[field] || "") +
+      "</textarea></td>"
     );
   }
 
@@ -1035,6 +1229,59 @@
       };
     });
 
+    document.querySelectorAll("[data-contact]").forEach(function (el) {
+      el.oninput = function () {
+        const group = el.getAttribute("data-group");
+        const id = el.getAttribute("data-contact");
+        const field = el.getAttribute("data-field");
+        const list = state.contacts[group] || [];
+        const row = list.find(function (item) {
+          return item.id === id;
+        });
+        if (row) {
+          row[field] = el.value;
+          save();
+        }
+        growBox(el);
+      };
+    });
+
+    const addContact = document.getElementById("add-contact");
+    if (addContact) {
+      addContact.onclick = function () {
+        const group = addContact.getAttribute("data-group");
+        if (!state.contacts[group]) state.contacts[group] = [];
+        state.contacts[group].push({
+          id: uid(),
+          student: "",
+          parent: "",
+          phone: "",
+          notes: "",
+        });
+        save();
+        render();
+      };
+    }
+
+    const exportContacts = document.getElementById("export-contacts");
+    if (exportContacts) {
+      exportContacts.onclick = function () {
+        exportContactsCsv(exportContacts.getAttribute("data-group"));
+      };
+    }
+
+    document.querySelectorAll("[data-del-contact]").forEach(function (btn) {
+      btn.onclick = function () {
+        const group = btn.getAttribute("data-group");
+        const id = btn.getAttribute("data-del-contact");
+        state.contacts[group] = (state.contacts[group] || []).filter(function (row) {
+          return row.id !== id;
+        });
+        save();
+        render();
+      };
+    });
+
     document.querySelectorAll("[data-rename]").forEach(function (input) {
       input.onchange = function () {
         const found = sisterById(input.getAttribute("data-rename"));
@@ -1181,6 +1428,27 @@
       entry: Object.assign({ id: uid(), date: today(), desc: "", category: "Diğer", who: "aile", type: "gider", amount: "" }, partial || {}),
     };
     render();
+  }
+
+  function exportContactsCsv(groupId) {
+    const group = groupById(groupId);
+    const header = ["student", "parent", "phone", "notes"];
+    const lines = [header.join(",")].concat(
+      ((state.contacts[group.id] || []).filter(function (row) {
+        return row.student || row.parent || row.phone || row.notes;
+      })).map(function (row) {
+        return header
+          .map(function (key) {
+            return csvEscape(row[key]);
+          })
+          .join(",");
+      })
+    );
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = group.id + "-rehber.csv";
+    a.click();
   }
 
   function csvEscape(value) {
