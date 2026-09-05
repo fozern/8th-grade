@@ -871,39 +871,78 @@ td select {
   line-height: 1.25;
 }
 
-.sohbet-kicker {
-  font-size: 13px;
+.sohbet-title,
+.sohbet-card-title,
+.sohbet-box {
+  display: block;
+  width: 100%;
+  border: 1.5px solid #ead9a4;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  resize: vertical;
+  outline: none;
+  line-height: 1.5;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.sohbet-title {
+  margin: 8px 0 14px;
+  min-height: 64px;
+  font-size: 24px;
   font-weight: 700;
-  color: #8a6a12;
+  letter-spacing: -0.03em;
+  border-color: #e6d08a;
+}
+
+.sohbet-card-title {
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 700;
+  border-color: var(--line);
+}
+
+.sohbet-box {
+  min-height: 110px;
+}
+
+.sohbet-title:focus,
+.sohbet-card-title:focus,
+.sohbet-box:focus {
+  border-color: #c44d7a;
+  box-shadow: 0 0 0 3px rgba(196, 77, 122, 0.15);
+}
+
+.sohbet-title::placeholder,
+.sohbet-card-title::placeholder,
+.sohbet-box::placeholder {
+  color: #b7aa8a;
+  font-weight: 500;
 }
 
 .sohbet-notes {
   display: block;
 }
 
-.sohbet-notes span {
+.sohbet-notes-lab {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
   font-weight: 700;
   color: var(--soft);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-.sohbet-hero textarea,
-.sohbet-card textarea {
-  width: 100%;
-  border: 0;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  padding: 10px 12px;
-  resize: none;
-  min-height: 72px;
-  outline: none;
-  line-height: 1.5;
-  overflow: hidden;
-  white-space: pre-wrap;
-  word-break: break-word;
+.sohbet-kicker {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a6a12;
 }
 
 .save-hint {

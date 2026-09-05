@@ -120,8 +120,9 @@
       afterschoolComing: "Afterschool'a gelenler",
       weekN: "Hafta",
       sohbetNotes: "Sohbet notları",
-      sohbetPrompt: "sohbet notu yaz… sonra istediğin zaman değiştir",
+      sohbetPrompt: "buraya yaz, sonra değiştir…",
       extraPrompt: "kısa not ekle…",
+      sohbetTitle: "sohbet başlığı…",
       saved: "kaydedildi ✓",
       satEvery: "her Cumartesi",
     },
@@ -209,8 +210,9 @@
       afterschoolComing: "Coming to afterschool",
       weekN: "Week",
       sohbetNotes: "Sohbet notes",
-      sohbetPrompt: "write a sohbet note… you can change it anytime",
+      sohbetPrompt: "write here, change it later…",
       extraPrompt: "add a short note…",
+      sohbetTitle: "sohbet title…",
       saved: "saved ✓",
       satEvery: "every Saturday",
     },
@@ -982,7 +984,6 @@
     const now = currentSaturday();
     const todayStr = today();
     const current = weeks.find(function (w) { return w.date === now; }) || weeks[0];
-    const kids = afterschoolKids();
     const currentRow = mufredatEntry(current.date);
     let lastMonth = "";
     let html =
@@ -995,29 +996,6 @@
       "</p>";
 
     html +=
-      '<section class="as-banner sohbet-people"><span class="as-label">' +
-      t("afterschoolComing") +
-      " · " +
-      kids.length +
-      '</span><div class="as-chips">' +
-      (kids.length
-        ? kids
-            .map(function (kid) {
-              return (
-                '<a class="as-chip" href="#/rehber/' +
-                kid.groupId +
-                '">' +
-                escapeHtml(kid.student) +
-                "<small>" +
-                escapeHtml(kid.group) +
-                "</small></a>"
-              );
-            })
-            .join("")
-        : '<span class="quiet">—</span>') +
-      "</div></section>";
-
-    html +=
       '<section class="sohbet-hero"><span class="pin"></span><p class="hand">' +
       t("thisSohbet") +
       "</p><div class=\"sohbet-kicker\">" +
@@ -1026,19 +1004,23 @@
       current.n +
       " · " +
       escapeHtml(formatWeek(current.date)) +
-      "</div><h3>" +
-      escapeHtml(current.title) +
-      '</h3><label class="sohbet-notes"><span>' +
+      '</div><textarea class="sohbet-title" data-muf-title="' +
+      current.date +
+      '" rows="2" placeholder="' +
+      t("sohbetTitle") +
+      '">' +
+      escapeHtml(currentRow.title || current.title) +
+      '</textarea><div class="sohbet-notes"><div class="sohbet-notes-lab"><span>' +
       t("sohbetNotes") +
-      ' <em class="save-hint" data-saved="' +
+      '</span><em class="save-hint" data-saved="' +
       current.date +
-      '"></em></span><textarea data-muf-notes="' +
+      '"></em></div><textarea class="sohbet-box" data-muf-notes="' +
       current.date +
-      '" placeholder="' +
+      '" rows="5" placeholder="' +
       t("sohbetPrompt") +
       '">' +
       escapeHtml(currentRow.notes || "") +
-      "</textarea></label>" +
+      "</textarea></div>" +
       extraNotesHtml(current.date) +
       "</section><div class=\"sohbet-track\">";
 
@@ -1062,18 +1044,25 @@
         week.date +
         '" ' +
         (row.done ? "checked" : "") +
-        " /></label></div><div class=\"sohbet-body\"><div class=\"sohbet-card-top\"><b>" +
-        escapeHtml(week.title) +
-        "</b>" +
+        " /></label></div><div class=\"sohbet-body\"><div class=\"sohbet-card-top\">" +
+        (isNow
+          ? "<b>" + escapeHtml(row.title || week.title) + "</b>"
+          : '<textarea class="sohbet-card-title" data-muf-title="' +
+            week.date +
+            '" rows="2" placeholder="' +
+            t("sohbetTitle") +
+            '">' +
+            escapeHtml(row.title || week.title) +
+            "</textarea>") +
         (isNow ? '<span class="badge">' + t("thisWeek") + "</span>" : "") +
         '</div><div class="quiet">' +
         escapeHtml(formatWeek(week.date)) +
         "</div>";
       if (!isNow) {
         html +=
-          '<textarea data-muf-notes="' +
+          '<textarea class="sohbet-box" data-muf-notes="' +
           week.date +
-          '" placeholder="' +
+          '" rows="4" placeholder="' +
           t("sohbetPrompt") +
           '">' +
           escapeHtml(row.notes || "") +
@@ -1901,6 +1890,15 @@
         state.mentorGoals[week] = Object.assign({ text: "", done: false }, state.mentorGoals[week], { done: box.checked });
         save();
         render();
+      };
+    });
+
+    document.querySelectorAll("[data-muf-title]").forEach(function (box) {
+      box.oninput = function () {
+        const date = box.getAttribute("data-muf-title");
+        mufredatEntry(date).title = box.value;
+        save();
+        growBox(box);
       };
     });
 
