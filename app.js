@@ -67,7 +67,7 @@
       addStudent: "Satır ekle",
       groupOf: "grubu",
       fillLater: "sonra doldur",
-      homeschool: "Homeschool",
+      homeschool: "Afterschool",
       kuran: "Kuran dersi alıyor mu",
       coming: "geliyor ✿",
       yes: "evet",
@@ -146,7 +146,7 @@
       addStudent: "Add row",
       groupOf: "group",
       fillLater: "fill later",
-      homeschool: "Homeschool",
+      homeschool: "Afterschool",
       kuran: "Quran class?",
       coming: "coming ✿",
       yes: "yes",
@@ -302,7 +302,7 @@
           contactRow("Hatice Betul Temizoz", "Aysenur Temiz", "Kayıtta: Hatice Temiz"),
           contactRow("Zeynep Bulut", "Metanet Bulut", ""),
           contactRow("Zeynep Gollu", "Merve Gollu", "Tuesday conflict"),
-          contactRow("Asuman Peker", "", "homeschool signup?"),
+          contactRow("Asuman Peker", "", "afterschool signup?"),
           contactRow("Seniha Top", "Bahti T", "Kayıtta: Seniha T"),
           contactRow("Nil Yildiz", "", "bire bir lazım olabilir"),
         ],
@@ -2017,12 +2017,13 @@
 
   function exportContactsCsv(groupId) {
     const group = groupById(groupId);
-    const header = ["student", "parent", "homeschool", "kuran", "phone", "notes"];
+    const header = ["student", "parent", "afterschool", "kuran", "phone", "notes"];
+    const fields = ["student", "parent", "homeschool", "kuran", "phone", "notes"];
     const lines = [header.join(",")].concat(
       ((state.contacts[group.id] || []).filter(function (row) {
         return row.student || row.parent || row.phone || row.notes || row.homeschool || row.kuran;
       })).map(function (row) {
-        return header
+        return fields
           .map(function (key) {
             return csvEscape(row[key]);
           })
