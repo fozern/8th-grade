@@ -125,6 +125,19 @@
       sohbetTitle: "sohbet başlığı…",
       saved: "kaydedildi ✓",
       satEvery: "her Cumartesi",
+      calendar: "Takvim",
+      gcal: "Google Calendar",
+      gcalHint: "Google Calendar paylaşım linkini veya Calendar ID’yi yapıştır — sitede görünsün.",
+      gcalSave: "Bağla",
+      gcalDisconnect: "Kopar",
+      gcalPlaceholder: "calendar ID veya embed / paylaşım linki…",
+      gcalIcs: "ICS indir",
+      gcalSubscribe: "Google’a abone ol",
+      gcalAdd: "Google’a ekle",
+      gcalHow: "ICS’i Google Calendar → Ayarlar → İçe aktar ile yükle, veya abone ol ile canlı tut.",
+      gcalPublic: "Takvimin görünmesi için Google’da “Bu takvimi herkese açık yap” olması gerekir.",
+      gcalEmpty: "henüz bağlı değil — linki yapıştır.",
+      gcalEvents: "Sitedeki etkinlikler",
     },
     en: {
       tag: "notes · ledger · agenda",
@@ -215,6 +228,19 @@
       sohbetTitle: "sohbet title…",
       saved: "saved ✓",
       satEvery: "every Saturday",
+      calendar: "Calendar",
+      gcal: "Google Calendar",
+      gcalHint: "Paste a Google Calendar share link or Calendar ID to show it here.",
+      gcalSave: "Connect",
+      gcalDisconnect: "Disconnect",
+      gcalPlaceholder: "calendar ID or embed / share link…",
+      gcalIcs: "Download ICS",
+      gcalSubscribe: "Subscribe in Google",
+      gcalAdd: "Add to Google",
+      gcalHow: "Import the ICS in Google Calendar → Settings → Import, or subscribe to keep it live.",
+      gcalPublic: "To show it here, the Google calendar needs to be public.",
+      gcalEmpty: "not connected yet — paste a link.",
+      gcalEvents: "Events from this site",
     },
   };
 
@@ -309,6 +335,7 @@
       homeschoolSeeded: true,
       gundemNotes: [],
       mufredat: {},
+      googleCal: "",
     };
   }
 
@@ -508,6 +535,7 @@
       }
       if (!data.gundemNotes) data.gundemNotes = [];
       if (!data.mufredat) data.mufredat = {};
+      if (data.googleCal == null) data.googleCal = "";
       return data;
     } catch (e) {
       return defaultState();
@@ -564,10 +592,11 @@
   function route() {
     const parts = (location.hash || "#/").replace(/^#/, "").split("/").filter(Boolean);
     const page = parts[0] || "home";
-    if (page === "abla") return { page: "sister", sisterId: parts[1] };
-    if (page === "cetele") return { page: "ledger", sisterId: parts[1] || null };
-    if (page === "etkinlikler") return { page: "events" };
+    if (page === "family" || page === "abla" || page === "cetele" || page === "etkinlikler") {
+      return { page: "home" };
+    }
     if (page === "rehber") return { page: "rehber", groupId: parts[1] || "asli" };
+    if (page === "takvim" || page === "calendar") return { page: "takvim" };
     return { page: page };
   }
 
@@ -648,8 +677,8 @@
     const view = route();
     const on =
       view.page === page ||
-      (page === "family" && (view.page === "family" || view.page === "events" || view.page === "ledger" || view.page === "sister")) ||
-      (page === "rehber" && view.page === "rehber");
+      (page === "rehber" && view.page === "rehber") ||
+      (page === "takvim" && view.page === "takvim");
     return '<a class="tab' + (on ? " on" : "") + '" href="' + href + '">' + label + "</a>";
   }
 
@@ -660,7 +689,7 @@
     const app = document.getElementById("app");
     app.innerHTML =
       '<div class="shell' +
-      (view.page === "rehber" || view.page === "gundemler" || view.page === "mufredat" ? " wide" : "") +
+      (view.page === "rehber" || view.page === "gundemler" || view.page === "mufredat" || view.page === "takvim" ? " wide" : "") +
       '">' +
       header() +
       tabs() +
@@ -668,6 +697,7 @@
       (view.page === "istisare" ? istisareView() : "") +
       (view.page === "mentor" ? mentorView() : "") +
       (view.page === "mufredat" ? mufredatView() : "") +
+      (view.page === "takvim" ? calendarSyncView() : "") +
       (view.page === "gundemler" ? gundemView() : "") +
       (view.page === "upcoming" ? checklistView("work", t("workOn"), t("workPrompt")) : "") +
       (view.page === "ideas" ? ideasView() : "") +
@@ -709,7 +739,7 @@
       navLink("#/upcoming", "upcoming", t("upcoming")) +
       navLink("#/ideas", "ideas", t("ideas")) +
       navLink("#/rehber/asli", "rehber", t("contacts")) +
-      navLink("#/family", "family", t("family")) +
+      navLink("#/takvim", "takvim", t("calendar")) +
       "</nav>"
     );
   }
@@ -903,6 +933,11 @@
       state.work.filter(function (x) {
         return !x.done;
       }).length +
+      "</b></a>" +
+      '<a class="card jump sky" href="#/takvim"><span class="quiet">' +
+      t("gcal") +
+      "</span><b>" +
+      t("calendar") +
       "</b></a></div>"
     );
   }
@@ -1107,6 +1142,186 @@
             .join("") +
           "</div>"
         : "")
+    );
+  }
+
+  function addDaysIso(dateStr, n) {
+    const d = new Date(dateStr + "T12:00:00");
+    d.setDate(d.getDate() + n);
+    return iso(d);
+  }
+
+  function icsStamp(dateStr) {
+    return String(dateStr || "").replace(/-/g, "");
+  }
+
+  function icsEscape(value) {
+    return String(value || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\r?\n/g, "\\n");
+  }
+
+  function siteCalendarEvents() {
+    const out = [];
+    mufredatWeeks().forEach(function (week) {
+      const row = (state.mufredat && state.mufredat[week.date]) || {};
+      out.push({
+        uid: "muf-" + week.n + "@core-es",
+        title: "Sohbet · " + t("weekN") + " " + week.n + " · " + (row.title || week.title),
+        start: week.date,
+        end: addDaysIso(week.date, 1),
+        details: row.notes || "Müfredat sohbet",
+      });
+    });
+    (state.calendarEvents || []).forEach(function (event, i) {
+      if (event.tbd || !event.start) return;
+      out.push({
+        uid: "gundem-" + (event.id || i) + "@core-es",
+        title: event.title,
+        start: event.start,
+        end: addDaysIso(event.end || event.start, 1),
+        details: (event.who ? whoLabel(event.who) : "") + (event.note ? " · " + event.note : ""),
+      });
+    });
+    return out;
+  }
+
+  function buildIcs() {
+    const stamp = icsStamp(today()) + "T120000Z";
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//8th grade CORE-ES//TR",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "X-WR-CALNAME:8th grade CORE - ES",
+      "X-WR-TIMEZONE:America/New_York",
+    ];
+    siteCalendarEvents().forEach(function (ev) {
+      lines.push(
+        "BEGIN:VEVENT",
+        "UID:" + ev.uid,
+        "DTSTAMP:" + stamp,
+        "DTSTART;VALUE=DATE:" + icsStamp(ev.start),
+        "DTEND;VALUE=DATE:" + icsStamp(ev.end),
+        "SUMMARY:" + icsEscape(ev.title),
+        "DESCRIPTION:" + icsEscape(ev.details),
+        "END:VEVENT"
+      );
+    });
+    lines.push("END:VCALENDAR");
+    return lines.join("\r\n");
+  }
+
+  function downloadIcs() {
+    const blob = new Blob([buildIcs()], { type: "text/calendar;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "core-es.ics";
+    a.click();
+  }
+
+  function googleTemplateUrl(ev) {
+    return (
+      "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" +
+      encodeURIComponent(ev.title) +
+      "&dates=" +
+      icsStamp(ev.start) +
+      "/" +
+      icsStamp(ev.end) +
+      "&details=" +
+      encodeURIComponent(ev.details || SITE)
+    );
+  }
+
+  function parseGoogleCalSrc(raw) {
+    const v = String(raw || "").trim();
+    if (!v) return "";
+    const iframe = v.match(/src=["']([^"']+)["']/i);
+    const urlStr = iframe ? iframe[1] : v;
+    try {
+      const u = new URL(urlStr);
+      return decodeURIComponent(u.searchParams.get("src") || u.searchParams.get("cid") || urlStr);
+    } catch (e) {
+      return v;
+    }
+  }
+
+  function googleEmbedUrl(src) {
+    return (
+      "https://calendar.google.com/calendar/embed?src=" +
+      encodeURIComponent(src) +
+      "&ctz=America/New_York&mode=MONTH&showTitle=0&showPrint=0&showTz=0"
+    );
+  }
+
+  function calendarSyncView() {
+    const src = parseGoogleCalSrc(state.googleCal);
+    const icsUrl = "https://fozern.github.io/8th-grade/calendar.ics";
+    const subUrl = "https://calendar.google.com/calendar/r?cid=" + encodeURIComponent(icsUrl);
+    const upcoming = siteCalendarEvents()
+      .filter(function (ev) {
+        return ev.start >= today();
+      })
+      .slice(0, 8);
+    return (
+      "<h2>" +
+      t("calendar") +
+      '</h2><p class="quiet" style="margin:0 0 14px">' +
+      t("gcal") +
+      "</p><section class=\"card gcal-card\"><p>" +
+      t("gcalHint") +
+      '</p><form class="addbar" id="gcal-form"><input id="gcal-input" placeholder="' +
+      t("gcalPlaceholder") +
+      '" value="' +
+      escapeHtml(state.googleCal || "") +
+      '" /><button class="btn" type="submit">' +
+      t("gcalSave") +
+      "</button>" +
+      (src
+        ? '<button class="btn light" type="button" id="gcal-clear">' + t("gcalDisconnect") + "</button>"
+        : "") +
+      '</form><p class="quiet">' +
+      t("gcalPublic") +
+      "</p>" +
+      (src
+        ? '<iframe class="gcal-frame" src="' +
+          escapeHtml(googleEmbedUrl(src)) +
+          '" title="Google Calendar"></iframe>'
+        : '<div class="gcal-empty">' + t("gcalEmpty") + "</div>") +
+      '</section><section class="card" style="margin-top:12px"><p class="quiet">' +
+      t("gcalHow") +
+      '</p><div class="row" style="margin-top:10px"><button class="btn" id="gcal-ics">' +
+      t("gcalIcs") +
+      '</button><a class="btn light" target="_blank" rel="noreferrer" href="' +
+      subUrl +
+      '">' +
+      t("gcalSubscribe") +
+      "</a></div></section><section class=\"card\" style=\"margin-top:12px\"><h3 style=\"margin:0 0 10px\">" +
+      t("gcalEvents") +
+      "</h3>" +
+      (upcoming.length
+        ? '<div class="list">' +
+          upcoming
+            .map(function (ev) {
+              return (
+                '<div class="item"><div><b>' +
+                escapeHtml(ev.title) +
+                '</b><div class="quiet">' +
+                escapeHtml(formatWeek(ev.start)) +
+                '</div></div><a class="btn pink tiny" target="_blank" rel="noreferrer" href="' +
+                googleTemplateUrl(ev) +
+                '">' +
+                t("gcalAdd") +
+                "</a></div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        : '<p class="empty">' + t("emptyList") + "</p>") +
+      "</section>"
     );
   }
 
@@ -1970,6 +2185,31 @@
         render();
       };
     });
+
+    const gcalForm = document.getElementById("gcal-form");
+    if (gcalForm) {
+      gcalForm.onsubmit = function (e) {
+        e.preventDefault();
+        const box = document.getElementById("gcal-input");
+        state.googleCal = parseGoogleCalSrc(box && box.value);
+        save();
+        render();
+      };
+    }
+    const gcalClear = document.getElementById("gcal-clear");
+    if (gcalClear) {
+      gcalClear.onclick = function () {
+        state.googleCal = "";
+        save();
+        render();
+      };
+    }
+    const gcalIcs = document.getElementById("gcal-ics");
+    if (gcalIcs) {
+      gcalIcs.onclick = function () {
+        downloadIcs();
+      };
+    }
 
     document.querySelectorAll("[data-add]").forEach(function (form) {
       const box = form.querySelector("textarea, input");

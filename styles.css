@@ -203,6 +203,7 @@ a {
 .jump.mint { background: var(--mint); border-color: transparent; }
 .jump.butter { background: var(--butter); border-color: transparent; }
 .jump.blush { background: #ffd6e8; border-color: transparent; }
+.jump.sky { background: #d7e8ff; border-color: transparent; }
 
 .jump b {
   font-size: 18px;
@@ -1035,6 +1036,30 @@ td select {
 
 .sohbet-body .quiet {
   margin-bottom: 8px;
+}
+
+.gcal-card p {
+  margin: 0 0 10px;
+}
+
+.gcal-frame {
+  width: 100%;
+  min-height: 560px;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  margin-top: 12px;
+}
+
+.gcal-empty {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  background: var(--cream);
+  border-radius: 14px;
+  color: var(--soft);
+  margin-top: 12px;
+  font-weight: 600;
 }
 
 @media (max-width: 800px) {
