@@ -235,9 +235,9 @@
 
   function veliLink() {
     const id = blobId();
-    const origin = location.href.split("#")[0].replace(/index\.html.*$/, "").replace(/ziyaret\.html.*$/, "");
-    const base = origin.endsWith("/") ? origin : origin + "/";
-    return base + "ziyaret.html?b=" + encodeURIComponent(id || "local") + "&d=" + encodeConfig();
+    let dir = location.pathname.replace(/index\.html$/i, "").replace(/ziyaret\.html$/i, "");
+    if (!dir.endsWith("/")) dir += "/";
+    return location.origin + dir + "ziyaret.html?b=" + encodeURIComponent(id || "local") + "&d=" + encodeConfig();
   }
 
   function encodeConfig() {
