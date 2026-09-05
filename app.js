@@ -6,6 +6,34 @@
     "Amellerin Allah’a en sevimli olanı, az da olsa devamlı (istikrarlı) olanıdır.";
   const CATEGORIES = ["Market", "Fatura", "Sağlık", "Ulaşım", "Hediye", "Yemek", "Diğer"];
   const WEEKS = fridaysUntilDec();
+  const MUFREDAT_TOPICS = [
+    "What is Belief in Destiny and What Are Its Benefits?",
+    "What is Free Will? How Does Free Will Relate to God’s Will?",
+    "What is Hereafter (The Reckoning, Hell, Paradise), Belief in Hereafter",
+    "If everything about our lives are preset, what is our role?",
+    "Tafsir of Ayat al Kursi",
+    "The Life of Prophet Ismail and Eid Al Adha",
+    "Hajj, Umrah, & Prophet Abraham",
+    "What is Zakat and Sadaqa",
+    "Ihsan, Goodness, Charity and Surah Al Maun",
+    "Do we need religion to build ethics and moral values? Why do we need rituals?",
+    "Tafsir of Surah Al Kawthar & An Nasr",
+    "Aspects of Prophet Muhammad’s Life",
+    "Prophet’s Sense of Justice",
+    "The Prophet’s Mercy and Tolerance",
+    "The Way The Prophet (PBUH) Worshipped Allah",
+    "Prophet’s Courage and Determination in his Mission",
+    "Importance of Reading the Qur’an",
+    "List of Prophets Named in the Qur’an",
+    "Wahiy, Khatm, Juz, Tafsir, Ayah, Surah",
+    "The Miraculousness of the Qur’an",
+    "Social Interactions",
+    "Being Trustworthy and Being Responsible",
+    "Respecting Parents is Very Important in Islam",
+    "Why do we need to consume Halal food?",
+    "Halal-Haram Sensitivity",
+    "Balancing Gender Interactions",
+  ];
 
   const I18N = {
     tr: {
@@ -86,6 +114,16 @@
       whoGenel: "Genel",
       endDate: "Bitiş",
       noDayEvents: "bu günde henüz yok — ekle.",
+      mufredat: "Müfredat",
+      sohbet: "Sohbet programı",
+      thisSohbet: "Bu haftanın sohbeti",
+      afterschoolComing: "Afterschool'a gelenler",
+      weekN: "Hafta",
+      sohbetNotes: "Sohbet notları",
+      sohbetPrompt: "sohbet notu yaz… sonra istediğin zaman değiştir",
+      extraPrompt: "kısa not ekle…",
+      saved: "kaydedildi ✓",
+      satEvery: "her Cumartesi",
     },
     en: {
       tag: "notes · ledger · agenda",
@@ -165,6 +203,16 @@
       whoGenel: "General",
       endDate: "End",
       noDayEvents: "nothing this day yet — add one.",
+      mufredat: "Curriculum",
+      sohbet: "Sohbet schedule",
+      thisSohbet: "This week's sohbet",
+      afterschoolComing: "Coming to afterschool",
+      weekN: "Week",
+      sohbetNotes: "Sohbet notes",
+      sohbetPrompt: "write a sohbet note… you can change it anytime",
+      extraPrompt: "add a short note…",
+      saved: "saved ✓",
+      satEvery: "every Saturday",
     },
   };
 
@@ -199,6 +247,44 @@
     return iso(friday);
   }
 
+  function currentSaturday() {
+    const now = new Date();
+    const day = now.getDay();
+    const sat = new Date(now);
+    if (day !== 6) sat.setDate(now.getDate() + (6 - day));
+    return iso(sat);
+  }
+
+  function mufredatWeeks() {
+    const out = [];
+    const d = new Date(2026, 8, 5);
+    MUFREDAT_TOPICS.forEach(function (title, i) {
+      out.push({ n: i + 1, date: iso(d), title: title });
+      d.setDate(d.getDate() + 7);
+    });
+    return out;
+  }
+
+  function mufredatEntry(date) {
+    if (!state.mufredat) state.mufredat = {};
+    if (!state.mufredat[date]) state.mufredat[date] = { notes: "", done: false, extras: [] };
+    if (!state.mufredat[date].extras) state.mufredat[date].extras = [];
+    return state.mufredat[date];
+  }
+
+  function afterschoolKids(groupId) {
+    const out = [];
+    const groups = groupId ? GROUPS.filter(function (g) { return g.id === groupId; }) : GROUPS;
+    groups.forEach(function (group) {
+      ((state.contacts && state.contacts[group.id]) || []).forEach(function (row) {
+        if (row.homeschool === "evet" && row.student) {
+          out.push({ student: row.student, group: group.name, groupId: group.id, parent: row.parent || "" });
+        }
+      });
+    });
+    return out;
+  }
+
   function defaultState() {
     return {
       lang: "tr",
@@ -220,6 +306,7 @@
       calendarSeeded: true,
       homeschoolSeeded: true,
       gundemNotes: [],
+      mufredat: {},
     };
   }
 
@@ -386,7 +473,7 @@
   function markHomeschool(contacts) {
     GROUPS.forEach(function (group) {
       ((contacts && contacts[group.id]) || []).forEach(function (row) {
-        if (isHomeschoolName(row.student)) row.homeschool = "evet";
+        if (isHomeschoolName(row.student) && row.homeschool !== "hayir") row.homeschool = "evet";
       });
     });
   }
@@ -410,16 +497,15 @@
         if (rename[s.name]) s.name = rename[s.name];
       });
       if (!data.contacts || !data.contacts.asli) data.contacts = seedContacts();
-      if (!data.homeschoolSeeded) {
-        markHomeschool(data.contacts);
-        data.homeschoolSeeded = true;
-      }
       ensureContactFlags(data.contacts);
+      markHomeschool(data.contacts);
+      data.homeschoolSeeded = true;
       if (!data.calendarSeeded) {
         data.calendarEvents = seedCalendar();
         data.calendarSeeded = true;
       }
       if (!data.gundemNotes) data.gundemNotes = [];
+      if (!data.mufredat) data.mufredat = {};
       return data;
     } catch (e) {
       return defaultState();
@@ -572,13 +658,14 @@
     const app = document.getElementById("app");
     app.innerHTML =
       '<div class="shell' +
-      (view.page === "rehber" || view.page === "gundemler" ? " wide" : "") +
+      (view.page === "rehber" || view.page === "gundemler" || view.page === "mufredat" ? " wide" : "") +
       '">' +
       header() +
       tabs() +
       (view.page === "home" || view.page === "" ? homeView() : "") +
       (view.page === "istisare" ? istisareView() : "") +
       (view.page === "mentor" ? mentorView() : "") +
+      (view.page === "mufredat" ? mufredatView() : "") +
       (view.page === "gundemler" ? gundemView() : "") +
       (view.page === "upcoming" ? checklistView("work", t("workOn"), t("workPrompt")) : "") +
       (view.page === "ideas" ? ideasView() : "") +
@@ -615,6 +702,7 @@
       navLink("#/", "home", t("home")) +
       navLink("#/istisare", "istisare", t("istisare")) +
       navLink("#/mentor", "mentor", t("mentor")) +
+      navLink("#/mufredat", "mufredat", t("mufredat")) +
       navLink("#/gundemler", "gundemler", t("agenda")) +
       navLink("#/upcoming", "upcoming", t("upcoming")) +
       navLink("#/ideas", "ideas", t("ideas")) +
@@ -635,6 +723,7 @@
   function contactsView(groupId) {
     const group = groupById(groupId);
     const rows = (state.contacts && state.contacts[group.id]) || [];
+    const coming = afterschoolKids(group.id);
     return (
       "<h2>" +
       escapeHtml(group.full) +
@@ -646,7 +735,19 @@
       t("parent") +
       " — " +
       t("fillLater") +
-      '</p><div class="row" style="margin-bottom:10px"><button class="btn" id="add-contact" data-group="' +
+      "</p>" +
+      (coming.length
+        ? '<div class="as-banner"><span class="as-label">' +
+          t("afterschoolComing") +
+          "</span><div class=\"as-chips\">" +
+          coming
+            .map(function (kid) {
+              return '<span class="as-chip">' + escapeHtml(kid.student) + "</span>";
+            })
+            .join("") +
+          "</div></div>"
+        : "") +
+      '<div class="row" style="margin-bottom:10px"><button class="btn" id="add-contact" data-group="' +
       group.id +
       '">' +
       t("addStudent") +
@@ -671,7 +772,9 @@
       rows
         .map(function (row, i) {
           return (
-            "<tr><td class=\"num\">" +
+            "<tr class=\"" +
+            (row.homeschool === "evet" ? "as-row" : "") +
+            "\"><td class=\"num\">" +
             (i + 1) +
             "</td>" +
             contactCell(group.id, row, "student", t("student")) +
@@ -783,6 +886,15 @@
       "</span><b>" +
       upcomingCal().length +
       "</b></a>" +
+      '<a class="card jump blush" href="#/mufredat"><span class="quiet">' +
+      t("mufredat") +
+      "</span><b>" +
+      (function () {
+        const now = currentSaturday();
+        const week = mufredatWeeks().find(function (w) { return w.date === now; }) || mufredatWeeks()[0];
+        return t("weekN") + " " + week.n;
+      })() +
+      "</b></a>" +
       '<a class="card jump butter" href="#/upcoming"><span class="quiet">' +
       t("upcoming") +
       "</span><b>" +
@@ -863,6 +975,150 @@
         "</textarea></div></label>";
     });
     return html + "</div>";
+  }
+
+  function mufredatView() {
+    const weeks = mufredatWeeks();
+    const now = currentSaturday();
+    const todayStr = today();
+    const current = weeks.find(function (w) { return w.date === now; }) || weeks[0];
+    const kids = afterschoolKids();
+    const currentRow = mufredatEntry(current.date);
+    let lastMonth = "";
+    let html =
+      "<h2>" +
+      t("mufredat") +
+      '</h2><p class="quiet" style="margin:0 0 14px">' +
+      t("sohbet") +
+      " · " +
+      t("satEvery") +
+      "</p>";
+
+    html +=
+      '<section class="as-banner sohbet-people"><span class="as-label">' +
+      t("afterschoolComing") +
+      " · " +
+      kids.length +
+      '</span><div class="as-chips">' +
+      (kids.length
+        ? kids
+            .map(function (kid) {
+              return (
+                '<a class="as-chip" href="#/rehber/' +
+                kid.groupId +
+                '">' +
+                escapeHtml(kid.student) +
+                "<small>" +
+                escapeHtml(kid.group) +
+                "</small></a>"
+              );
+            })
+            .join("")
+        : '<span class="quiet">—</span>') +
+      "</div></section>";
+
+    html +=
+      '<section class="sohbet-hero"><span class="pin"></span><p class="hand">' +
+      t("thisSohbet") +
+      "</p><div class=\"sohbet-kicker\">" +
+      t("weekN") +
+      " " +
+      current.n +
+      " · " +
+      escapeHtml(formatWeek(current.date)) +
+      "</div><h3>" +
+      escapeHtml(current.title) +
+      '</h3><label class="sohbet-notes"><span>' +
+      t("sohbetNotes") +
+      ' <em class="save-hint" data-saved="' +
+      current.date +
+      '"></em></span><textarea data-muf-notes="' +
+      current.date +
+      '" placeholder="' +
+      t("sohbetPrompt") +
+      '">' +
+      escapeHtml(currentRow.notes || "") +
+      "</textarea></label>" +
+      extraNotesHtml(current.date) +
+      "</section><div class=\"sohbet-track\">";
+
+    weeks.forEach(function (week) {
+      const month = monthLabel(week.date);
+      const row = mufredatEntry(week.date);
+      const isNow = week.date === now;
+      const isPast = week.date < todayStr;
+      if (month !== lastMonth) {
+        html += '<div class="month">' + escapeHtml(month) + "</div>";
+        lastMonth = month;
+      }
+      html +=
+        '<article class="sohbet-card' +
+        (isNow ? " now" : "") +
+        (isPast && !isNow ? " past" : "") +
+        (row.done ? " done" : "") +
+        '"><div class="sohbet-side"><span class="sohbet-num">' +
+        String(week.n).padStart(2, "0") +
+        '</span><label class="sohbet-check"><input type="checkbox" data-muf-done="' +
+        week.date +
+        '" ' +
+        (row.done ? "checked" : "") +
+        " /></label></div><div class=\"sohbet-body\"><div class=\"sohbet-card-top\"><b>" +
+        escapeHtml(week.title) +
+        "</b>" +
+        (isNow ? '<span class="badge">' + t("thisWeek") + "</span>" : "") +
+        '</div><div class="quiet">' +
+        escapeHtml(formatWeek(week.date)) +
+        "</div>";
+      if (!isNow) {
+        html +=
+          '<textarea data-muf-notes="' +
+          week.date +
+          '" placeholder="' +
+          t("sohbetPrompt") +
+          '">' +
+          escapeHtml(row.notes || "") +
+          "</textarea>" +
+          extraNotesHtml(week.date);
+      }
+      html += "</div></article>";
+    });
+    return html + "</div>";
+  }
+
+  function extraNotesHtml(date) {
+    const extras = mufredatEntry(date).extras || [];
+    return (
+      '<form class="addbar sohbet-add" data-muf-add="' +
+      date +
+      '"><input name="title" placeholder="' +
+      t("extraPrompt") +
+      '" /><button class="btn pink tiny" type="submit">' +
+      t("add") +
+      "</button></form>" +
+      (extras.length
+        ? '<div class="list sohbet-extras">' +
+          extras
+            .map(function (note) {
+              return (
+                '<div class="item"><textarea rows="1" data-muf-extra="' +
+                note.id +
+                '" data-week="' +
+                date +
+                '">' +
+                escapeHtml(note.title) +
+                '</textarea><button class="btn light tiny" data-muf-del="' +
+                note.id +
+                '" data-week="' +
+                date +
+                '">' +
+                t("delete") +
+                "</button></div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        : "")
+    );
   }
 
   function whoLabel(who) {
@@ -1643,6 +1899,75 @@
       box.onchange = function () {
         const week = box.getAttribute("data-mentor-done");
         state.mentorGoals[week] = Object.assign({ text: "", done: false }, state.mentorGoals[week], { done: box.checked });
+        save();
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-muf-notes]").forEach(function (box) {
+      box.oninput = function () {
+        const date = box.getAttribute("data-muf-notes");
+        const row = mufredatEntry(date);
+        row.notes = box.value;
+        save();
+        growBox(box);
+        const hint = document.querySelector('[data-saved="' + date + '"]');
+        if (hint) {
+          hint.textContent = t("saved");
+          hint.classList.add("on");
+          clearTimeout(box._saved);
+          box._saved = setTimeout(function () {
+            hint.classList.remove("on");
+          }, 1400);
+        }
+      };
+    });
+
+    document.querySelectorAll("[data-muf-done]").forEach(function (box) {
+      box.onchange = function () {
+        mufredatEntry(box.getAttribute("data-muf-done")).done = box.checked;
+        save();
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-muf-add]").forEach(function (form) {
+      const box = form.querySelector("input, textarea");
+      if (box) box.oninput = function () { growBox(box); };
+      form.onsubmit = function (e) {
+        e.preventDefault();
+        const date = form.getAttribute("data-muf-add");
+        const title = String(new FormData(form).get("title") || "").trim();
+        if (!title) return;
+        mufredatEntry(date).extras.push({ id: uid(), title: title });
+        save();
+        render();
+      };
+    });
+
+    document.querySelectorAll("[data-muf-extra]").forEach(function (box) {
+      box.oninput = function () {
+        const date = box.getAttribute("data-week");
+        const id = box.getAttribute("data-muf-extra");
+        const note = mufredatEntry(date).extras.find(function (item) {
+          return item.id === id;
+        });
+        if (note) {
+          note.title = box.value;
+          save();
+        }
+        growBox(box);
+      };
+    });
+
+    document.querySelectorAll("[data-muf-del]").forEach(function (btn) {
+      btn.onclick = function () {
+        const date = btn.getAttribute("data-week");
+        const id = btn.getAttribute("data-muf-del");
+        const row = mufredatEntry(date);
+        row.extras = row.extras.filter(function (item) {
+          return item.id !== id;
+        });
         save();
         render();
       };

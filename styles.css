@@ -188,7 +188,7 @@ a {
 
 .home-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
@@ -202,6 +202,7 @@ a {
 .jump.peach { background: var(--peach); border-color: transparent; }
 .jump.mint { background: var(--mint); border-color: transparent; }
 .jump.butter { background: var(--butter); border-color: transparent; }
+.jump.blush { background: #ffd6e8; border-color: transparent; }
 
 .jump b {
   font-size: 18px;
@@ -804,6 +805,199 @@ td select {
   font-size: 18px;
 }
 
+.as-banner {
+  background: #ffe8f1;
+  border: 1px solid #f0b7cc;
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.as-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c44d7a;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.as-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.as-chip {
+  display: inline-flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #f0b7cc;
+  color: #c44d7a;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.as-chip small {
+  font-size: 10px;
+  font-weight: 600;
+  color: #a36;
+  opacity: 0.7;
+}
+
+.sheet tr.as-row td {
+  background: #fff6fa;
+}
+
+.sheet tr.as-row td.sheet-home.on {
+  background: #ffe0ee;
+}
+
+.sohbet-hero {
+  position: relative;
+  background: var(--butter);
+  border-radius: 18px;
+  padding: 26px 18px 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 0 rgba(43, 36, 34, 0.04);
+}
+
+.sohbet-hero h3 {
+  margin: 6px 0 14px;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+
+.sohbet-kicker {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a6a12;
+}
+
+.sohbet-notes {
+  display: block;
+}
+
+.sohbet-notes span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--soft);
+  margin-bottom: 4px;
+}
+
+.sohbet-hero textarea,
+.sohbet-card textarea {
+  width: 100%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  padding: 10px 12px;
+  resize: none;
+  min-height: 72px;
+  outline: none;
+  line-height: 1.5;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.save-hint {
+  font-style: normal;
+  color: var(--ok);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.save-hint.on {
+  opacity: 1;
+}
+
+.sohbet-add {
+  margin: 10px 0 0;
+}
+
+.sohbet-extras {
+  margin-top: 8px;
+}
+
+.sohbet-track {
+  display: grid;
+  gap: 10px;
+}
+
+.sohbet-card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.sohbet-card.now {
+  border-color: #f0b9a4;
+  background: #fff6f1;
+}
+
+.sohbet-card.past {
+  opacity: 0.78;
+}
+
+.sohbet-card.done {
+  background: #f4fbf6;
+  border-color: #cfeedd;
+}
+
+.sohbet-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sohbet-num {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--cream);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.sohbet-card.now .sohbet-num {
+  background: var(--blush);
+}
+
+.sohbet-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.sohbet-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.sohbet-card-top b {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.sohbet-body .quiet {
+  margin-bottom: 8px;
+}
+
 @media (max-width: 800px) {
   .hero,
   .home-grid,
@@ -812,7 +1006,8 @@ td select {
   .charts,
   .totals,
   .grid3,
-  .gundem-cols {
+  .gundem-cols,
+  .sohbet-card {
     grid-template-columns: 1fr;
   }
 
