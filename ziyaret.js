@@ -991,6 +991,27 @@
         render();
       };
     }
+    const noteBox = host.querySelector("#zv-note");
+    if (noteBox) {
+      noteBox.oninput = function () {
+        const day = dayOf(selected);
+        if (!day) return;
+        day.note = noteBox.value;
+        persist();
+      };
+    }
+    host.querySelectorAll("[data-zv-edit-time]").forEach(function (input) {
+      input.onchange = function () {
+        const day = dayOf(selected);
+        if (!day) return;
+        const times = [];
+        host.querySelectorAll("[data-zv-edit-time]").forEach(function (box) {
+          if (box.value) times.push(box.value);
+        });
+        if (times.length) day.times = times;
+        persist();
+      };
+    });
     const saveDay = host.querySelector("#zv-save-day");
     if (saveDay) {
       saveDay.onclick = function () {
@@ -1005,7 +1026,6 @@
         day.note = note ? note.value : "";
         persist();
         toast(t("saveDay"));
-        render();
       };
     }
     const addTime = host.querySelector("#zv-add-time");
@@ -1163,6 +1183,9 @@
 
   function persist() {
     saveLocal();
+    try {
+      localStorage.setItem("core-es-veli-url", veliLink());
+    } catch (e) {}
     pushCloud();
   }
 
@@ -1299,6 +1322,7 @@
 
   root.Ziyaret = { mount: mount, destroy: destroy, veliLink: veliLink };
 
+  loadLocal();
   const boot = document.getElementById("ziyaret");
   if (boot) {
     const params = new URLSearchParams(location.search);

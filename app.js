@@ -124,6 +124,8 @@
       extraPrompt: "kısa not ekle…",
       sohbetTitle: "sohbet başlığı…",
       saved: "kaydedildi ✓",
+      copyVeli: "Veli linkini kopyala",
+      veliLinkNote: "Veli ziyareti linki",
       satEvery: "her Cumartesi",
       calendar: "Takvim",
       gcal: "Google Calendar",
@@ -228,6 +230,8 @@
       extraPrompt: "add a short note…",
       sohbetTitle: "sohbet title…",
       saved: "saved ✓",
+      copyVeli: "Copy parent link",
+      veliLinkNote: "Parent visit link",
       satEvery: "every Saturday",
       calendar: "Calendar",
       gcal: "Google Calendar",
@@ -552,8 +556,64 @@
   let viewYear = 2026;
   let viewMonth = 8;
 
+  const VELI_NOTE_ID = "veli-ziyaret-link";
+
+  function siteDir() {
+    let dir = location.pathname.replace(/index\.html$/i, "").replace(/ziyaret\.html$/i, "");
+    if (!dir.endsWith("/")) dir += "/";
+    return location.origin + dir;
+  }
+
+  function veliUrl() {
+    try {
+      if (window.Ziyaret && typeof window.Ziyaret.veliLink === "function") {
+        const url = window.Ziyaret.veliLink();
+        if (url) {
+          localStorage.setItem("core-es-veli-url", url);
+          return url;
+        }
+      }
+    } catch (e) {}
+    return localStorage.getItem("core-es-veli-url") || siteDir() + "ziyaret.html";
+  }
+
+  function ensureVeliNote() {
+    const url = veliUrl();
+    if (!state.gundemNotes) state.gundemNotes = [];
+    const title = t("veliLinkNote") + ": " + url;
+    const existing = state.gundemNotes.find(function (n) {
+      return n.id === VELI_NOTE_ID;
+    });
+    if (existing) {
+      if (existing.title === title && existing.pinned) return;
+      existing.title = title;
+      existing.pinned = true;
+    } else {
+      state.gundemNotes.unshift({ id: VELI_NOTE_ID, title: title, done: false, pinned: true });
+    }
+    save();
+  }
+
+  function flashSaved(el) {
+    if (!el) return;
+    let hint = el.parentNode && el.parentNode.querySelector(".save-hint");
+    if (!hint) {
+      hint = document.createElement("em");
+      hint.className = "save-hint";
+      el.parentNode.appendChild(hint);
+    }
+    hint.textContent = t("saved");
+    hint.classList.add("on");
+    clearTimeout(el._saved);
+    el._saved = setTimeout(function () {
+      hint.classList.remove("on");
+    }, 1200);
+  }
+
   function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
   }
 
   save();
@@ -690,6 +750,7 @@
     destroyCharts();
     const view = route();
     const sister = view.sisterId ? sisterById(view.sisterId) : null;
+    ensureVeliNote();
     const app = document.getElementById("app");
     app.innerHTML =
       '<div class="shell' +
@@ -915,7 +976,7 @@
       '”</p><small>(Buhari)</small></section>' +
       '<section class="pin-wrap"><span class="pin"></span><p class="hand">' +
       t("weekGoal") +
-      '</p><textarea id="weekly-goal" placeholder="' +
+      ' <em class="save-hint"></em></p><textarea id="weekly-goal" placeholder="' +
       t("pinHere") +
       '">' +
       escapeHtml(state.weeklyGoal) +
@@ -952,9 +1013,13 @@
       "</span><b>" +
       t("calendar") +
       "</b></a>" +
-      '<a class="card jump peach" href="#/ziyaret"><span class="quiet">' +
+      '<div class="card jump peach ziyaret-home"><a href="#/ziyaret"><span class="quiet">' +
       t("ziyaret") +
-      "</span><b>Veli</b></a></div>"
+      "</span><b>Veli</b></a><input class=\"zv-home-url\" id=\"home-veli-url\" readonly value=\"" +
+      escapeHtml(veliUrl()) +
+      '" /><button type="button" class="btn tiny" id="copy-veli">' +
+      t("copyVeli") +
+      "</button></div></div>"
     );
   }
 
@@ -997,7 +1062,7 @@
       HADITH +
       '”</p><small>(Buhari)</small></section><section class="pin-wrap"><span class="pin"></span><p class="hand">' +
       t("weekGoal") +
-      '</p><textarea id="weekly-goal" placeholder="' +
+      ' <em class="save-hint"></em></p><textarea id="weekly-goal" placeholder="' +
       t("pinHere") +
       '">' +
       escapeHtml(state.weeklyGoal) +
@@ -1510,6 +1575,20 @@
         ? '<div class="list">' +
           notes
             .map(function (note) {
+              if (note.id === VELI_NOTE_ID) {
+                const url = veliUrl();
+                return (
+                  '<div class="item pinned veli-note"><div><b>' +
+                  t("veliLinkNote") +
+                  '</b><a class="veli-note-link" href="' +
+                  escapeHtml(url) +
+                  '" target="_blank" rel="noopener">' +
+                  escapeHtml(url) +
+                  "</a></div><button type=\"button\" class=\"btn tiny\" data-copy-veli>" +
+                  t("copyVeli") +
+                  "</button></div>"
+                );
+              }
               return (
                 '<div class="item' +
                 (note.done ? " done" : "") +
@@ -2095,14 +2174,35 @@
         state.weeklyGoal = weekly.value;
         save();
         growBox(weekly);
+        flashSaved(weekly);
       };
     }
+
+    function copyVeliLink() {
+      const url = veliUrl();
+      const box = document.getElementById("home-veli-url");
+      if (box) box.value = url;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url);
+      } else {
+        prompt(t("copyVeli"), url);
+      }
+    }
+    document.querySelectorAll("[data-copy-veli], #copy-veli").forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        copyVeliLink();
+        flashSaved(btn);
+      };
+    });
 
     document.querySelectorAll("[data-istisare]").forEach(function (box) {
       box.oninput = function () {
         state.istisare[box.getAttribute("data-istisare")] = box.value;
         save();
         growBox(box);
+        flashSaved(box);
       };
     });
 
@@ -2233,6 +2333,12 @@
         box.oninput = function () {
           growBox(box);
         };
+        box.onkeydown = function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            form.requestSubmit();
+          }
+        };
       }
       form.onsubmit = function (e) {
         e.preventDefault();
@@ -2268,6 +2374,7 @@
         if (item) {
           item.title = input.value;
           save();
+          flashSaved(input);
         }
         growBox(input);
       };
@@ -2276,8 +2383,10 @@
     document.querySelectorAll("[data-del]").forEach(function (btn) {
       btn.onclick = function () {
         const key = btn.getAttribute("data-del");
+        const id = btn.getAttribute("data-id");
+        if (id === VELI_NOTE_ID) return;
         state[key] = state[key].filter(function (x) {
-          return x.id !== btn.getAttribute("data-id");
+          return x.id !== id;
         });
         save();
         render();

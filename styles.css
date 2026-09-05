@@ -209,6 +209,37 @@ a {
   font-size: 18px;
 }
 
+.ziyaret-home {
+  gap: 8px;
+}
+
+.ziyaret-home a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zv-home-url,
+.veli-note-link {
+  width: 100%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  word-break: break-all;
+  display: block;
+}
+
+.veli-note {
+  align-items: flex-start;
+}
+
+.veli-note b {
+  display: block;
+  margin-bottom: 6px;
+}
+
 .quiet {
   color: var(--soft);
   font-size: 13px;
