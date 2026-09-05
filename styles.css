@@ -1062,6 +1062,372 @@ td select {
   font-weight: 600;
 }
 
+body.zv-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.zv-brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.zv-brand p {
+  margin: 2px 0 0;
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.zv-wrap h2 {
+  margin: 0;
+}
+
+.zv-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.zv-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.zv-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.zv-pill:disabled {
+  cursor: default;
+}
+
+.zv-pill.on {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.zv-pill.asli,
+.zv-pick.asli,
+.zv-cell.asli,
+.zv-def.asli,
+.zv-panel.asli {
+  background: #ffd7c2;
+  color: #8a3d22;
+}
+
+.zv-pill.nazlican,
+.zv-pick.nazlican,
+.zv-cell.nazlican,
+.zv-def.nazlican,
+.zv-panel.nazlican {
+  background: #cfeedd;
+  color: #1f6a42;
+}
+
+.zv-pill.yagmur,
+.zv-pick.yagmur,
+.zv-cell.yagmur,
+.zv-def.yagmur,
+.zv-panel.yagmur {
+  background: #d7e8ff;
+  color: #1d4f8a;
+}
+
+.zv-sync {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--soft);
+}
+
+.zv-tools {
+  margin-bottom: 12px;
+}
+
+.zv-hint {
+  margin: -4px 0 12px;
+}
+
+.zv-linkbox {
+  margin-top: 10px;
+}
+
+.zv-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.9fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.zv-cal {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.zv-cal .cal-nav {
+  flex-wrap: wrap;
+}
+
+.zv-month {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px 8px;
+  background: #fff;
+  min-height: 36px;
+}
+
+.zv-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.zv-cell {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  min-height: 78px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 8px 6px 6px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  line-height: 1.15;
+}
+
+.zv-cell.empty {
+  background: transparent;
+  border-color: transparent;
+  min-height: 20px;
+  cursor: default;
+}
+
+.zv-cell.today {
+  box-shadow: inset 0 0 0 2px #f0b9a4;
+}
+
+.zv-cell.on {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.zv-cell.past {
+  opacity: 0.55;
+}
+
+.zv-cell:disabled {
+  cursor: default;
+}
+
+.zv-cell.packed {
+  opacity: 0.72;
+}
+
+.zv-wrap.painting .zv-cell:not(.empty):not(:disabled) {
+  cursor: copy;
+}
+
+.zv-cal .cal-num {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.zv-abla {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zv-fullmark {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.zv-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.zv-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(43, 36, 34, 0.22);
+}
+
+.zv-dot.full {
+  background: rgba(43, 36, 34, 0.72);
+}
+
+.zv-panel h3 {
+  margin: 4px 0 10px;
+  font-size: 22px;
+}
+
+.zv-kicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.zv-lab {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--soft);
+  margin: 12px 0 8px;
+}
+
+.zv-slots,
+.zv-ablas {
+  display: grid;
+  gap: 8px;
+}
+
+.zv-mini {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.zv-pick.on {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.zv-slot,
+.zv-pick {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.zv-slot b {
+  display: block;
+  font-size: 20px;
+}
+
+.zv-slot span,
+.zv-slot small {
+  display: block;
+  color: var(--soft);
+  font-size: 13px;
+}
+
+.zv-slot.on {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.zv-slot.full {
+  opacity: 0.55;
+}
+
+.zv-form,
+.zv-edit {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.zv-form input,
+.zv-edit input,
+.zv-defaults input,
+.zv-settings input,
+.zv-listcard input,
+.zv-linkbox input {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  font-size: 16px;
+  width: 100%;
+}
+
+.zv-mine {
+  margin-top: 12px;
+}
+
+.zv-ok {
+  margin-top: 14px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.zv-defaults {
+  display: grid;
+  gap: 8px;
+}
+
+.zv-def {
+  display: grid;
+  grid-template-columns: 140px 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.zv-settings {
+  margin-top: 12px;
+}
+
+.zv-settings .toolbar,
+.zv-listcard .toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.zv-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 16px;
+  opacity: 0;
+  pointer-events: none;
+  font-weight: 700;
+}
+
+.zv-toast.on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 @media (max-width: 800px) {
   .hero,
   .home-grid,
@@ -1071,7 +1437,9 @@ td select {
   .totals,
   .grid3,
   .gundem-cols,
-  .sohbet-card {
+  .sohbet-card,
+  .zv-layout,
+  .zv-def {
     grid-template-columns: 1fr;
   }
 
@@ -1079,7 +1447,33 @@ td select {
     font-size: 18px;
   }
 
-  .cal-cell {
-    min-height: 72px;
+  .cal-cell,
+  .zv-cell {
+    min-height: 64px;
+  }
+
+  .zv-mini {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .tabs,
+  .lang,
+  .zv-tools,
+  .zv-form,
+  .zv-edit,
+  .zv-hint,
+  .zv-toast,
+  #zv-form {
+    display: none !important;
+  }
+
+  .zv-layout {
+    grid-template-columns: 1fr;
+  }
+
+  body {
+    background: #fff;
   }
 }

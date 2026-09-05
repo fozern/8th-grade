@@ -138,6 +138,7 @@
       gcalPublic: "Takvimin görünmesi için Google’da “Bu takvimi herkese açık yap” olması gerekir.",
       gcalEmpty: "henüz bağlı değil — linki yapıştır.",
       gcalEvents: "Sitedeki etkinlikler",
+      ziyaret: "Ziyaret",
     },
     en: {
       tag: "notes · ledger · agenda",
@@ -241,6 +242,7 @@
       gcalPublic: "To show it here, the Google calendar needs to be public.",
       gcalEmpty: "not connected yet — paste a link.",
       gcalEvents: "Events from this site",
+      ziyaret: "Visits",
     },
   };
 
@@ -597,6 +599,7 @@
     }
     if (page === "rehber") return { page: "rehber", groupId: parts[1] || "asli" };
     if (page === "takvim" || page === "calendar") return { page: "takvim" };
+    if (page === "ziyaret") return { page: "ziyaret" };
     return { page: page };
   }
 
@@ -678,7 +681,8 @@
     const on =
       view.page === page ||
       (page === "rehber" && view.page === "rehber") ||
-      (page === "takvim" && view.page === "takvim");
+      (page === "takvim" && view.page === "takvim") ||
+      (page === "ziyaret" && view.page === "ziyaret");
     return '<a class="tab' + (on ? " on" : "") + '" href="' + href + '">' + label + "</a>";
   }
 
@@ -689,7 +693,7 @@
     const app = document.getElementById("app");
     app.innerHTML =
       '<div class="shell' +
-      (view.page === "rehber" || view.page === "gundemler" || view.page === "mufredat" || view.page === "takvim" ? " wide" : "") +
+      (view.page === "rehber" || view.page === "gundemler" || view.page === "mufredat" || view.page === "takvim" || view.page === "ziyaret" ? " wide" : "") +
       '">' +
       header() +
       tabs() +
@@ -698,6 +702,7 @@
       (view.page === "mentor" ? mentorView() : "") +
       (view.page === "mufredat" ? mufredatView() : "") +
       (view.page === "takvim" ? calendarSyncView() : "") +
+      (view.page === "ziyaret" ? '<div id="ziyaret-admin"></div>' : "") +
       (view.page === "gundemler" ? gundemView() : "") +
       (view.page === "upcoming" ? checklistView("work", t("workOn"), t("workPrompt")) : "") +
       (view.page === "ideas" ? ideasView() : "") +
@@ -709,6 +714,13 @@
       "</div>" +
       (modal ? modalHtml() : "");
     bind(view, sister);
+    if (window.Ziyaret) {
+      if (view.page === "ziyaret") {
+        window.Ziyaret.mount(document.getElementById("ziyaret-admin"), { admin: true, lang: state.lang });
+      } else {
+        window.Ziyaret.destroy();
+      }
+    }
     if (view.page === "family" || view.page === "sister" || view.page === "ledger") {
       drawCharts(view.sisterId || null, view.page === "family");
     }
@@ -740,6 +752,7 @@
       navLink("#/ideas", "ideas", t("ideas")) +
       navLink("#/rehber/asli", "rehber", t("contacts")) +
       navLink("#/takvim", "takvim", t("calendar")) +
+      navLink("#/ziyaret", "ziyaret", t("ziyaret")) +
       "</nav>"
     );
   }
@@ -938,7 +951,10 @@
       t("gcal") +
       "</span><b>" +
       t("calendar") +
-      "</b></a></div>"
+      "</b></a>" +
+      '<a class="card jump peach" href="#/ziyaret"><span class="quiet">' +
+      t("ziyaret") +
+      "</span><b>Veli</b></a></div>"
     );
   }
 
