@@ -1387,74 +1387,6 @@
     );
   }
 
-  function calendarSyncView() {
-    const src = parseGoogleCalSrc(state.googleCal);
-    const icsUrl = "https://fozern.github.io/8th-grade/calendar.ics";
-    const subUrl = "https://calendar.google.com/calendar/r?cid=" + encodeURIComponent(icsUrl);
-    const upcoming = siteCalendarEvents()
-      .filter(function (ev) {
-        return ev.start >= today();
-      })
-      .slice(0, 8);
-    return (
-      "<h2>" +
-      t("calendar") +
-      '</h2><p class="quiet" style="margin:0 0 14px">' +
-      t("gcal") +
-      "</p><section class=\"card gcal-card\"><p>" +
-      t("gcalHint") +
-      '</p><form class="addbar" id="gcal-form"><input id="gcal-input" placeholder="' +
-      t("gcalPlaceholder") +
-      '" value="' +
-      escapeHtml(state.googleCal || "") +
-      '" /><button class="btn" type="submit">' +
-      t("gcalSave") +
-      "</button>" +
-      (src
-        ? '<button class="btn light" type="button" id="gcal-clear">' + t("gcalDisconnect") + "</button>"
-        : "") +
-      '</form><p class="quiet">' +
-      t("gcalPublic") +
-      "</p>" +
-      (src
-        ? '<iframe class="gcal-frame" src="' +
-          escapeHtml(googleEmbedUrl(src)) +
-          '" title="Google Calendar"></iframe>'
-        : '<div class="gcal-empty">' + t("gcalEmpty") + "</div>") +
-      '</section><section class="card" style="margin-top:12px"><p class="quiet">' +
-      t("gcalHow") +
-      '</p><div class="row" style="margin-top:10px"><button class="btn" id="gcal-ics">' +
-      t("gcalIcs") +
-      '</button><a class="btn light" target="_blank" rel="noreferrer" href="' +
-      subUrl +
-      '">' +
-      t("gcalSubscribe") +
-      "</a></div></section><section class=\"card\" style=\"margin-top:12px\"><h3 style=\"margin:0 0 10px\">" +
-      t("gcalEvents") +
-      "</h3>" +
-      (upcoming.length
-        ? '<div class="list">' +
-          upcoming
-            .map(function (ev) {
-              return (
-                '<div class="item"><div><b>' +
-                escapeHtml(ev.title) +
-                '</b><div class="quiet">' +
-                escapeHtml(formatWeek(ev.start)) +
-                '</div></div><a class="btn pink tiny" target="_blank" rel="noreferrer" href="' +
-                googleTemplateUrl(ev) +
-                '">' +
-                t("gcalAdd") +
-                "</a></div>"
-              );
-            })
-            .join("") +
-          "</div>"
-        : '<p class="empty">' + t("emptyList") + "</p>") +
-      "</section>"
-    );
-  }
-
   function whoLabel(who) {
     if (who === "girls") return t("whoGirls");
     if (who === "ablalar") return t("whoAblalar");
@@ -1509,93 +1441,23 @@
   }
 
   function gundemView() {
-    const monthName = new Date(viewYear, viewMonth, 1).toLocaleDateString(state.lang === "tr" ? "tr-TR" : "en-US", {
-      month: "long",
-      year: "numeric",
-    });
-    const weekdays =
-      state.lang === "tr" ? ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const dayEvents = eventsOn(selectedDay);
     const notes = (state.gundemNotes || []).slice().sort(function (a, b) {
       return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
     });
-    const prettyDay = new Date(selectedDay + "T12:00:00").toLocaleDateString(state.lang === "tr" ? "tr-TR" : "en-US", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
+    const upcoming = upcomingCal();
+    const tbd = tbdEvents();
 
     let html =
       "<h2>" +
       t("agenda") +
-      '</h2><section class="cal-wrap"><div class="cal-nav"><button class="btn light tiny" data-cal="prev">‹</button><b>' +
-      escapeHtml(monthName) +
-      '</b><button class="btn light tiny" data-cal="next">›</button><button class="btn tiny" data-cal="today">' +
-      t("todayBtn") +
-      '</button></div><div class="cal-week">' +
-      weekdays
-        .map(function (d) {
-          return "<span>" + d + "</span>";
-        })
-        .join("") +
-      '</div><div class="cal-grid">';
-
-    monthCells(viewYear, viewMonth).forEach(function (day) {
-      if (!day) {
-        html += '<div class="cal-cell empty"></div>';
-        return;
-      }
-      const dateStr = iso(new Date(viewYear, viewMonth, day));
-      const list = eventsOn(dateStr);
-      html +=
-        '<div class="cal-cell' +
-        (dateStr === today() ? " today" : "") +
-        (dateStr === selectedDay ? " on" : "") +
-        '" data-day="' +
-        dateStr +
-        '"><span class="cal-num">' +
-        day +
-        "</span>" +
-        list
-          .slice(0, 3)
-          .map(function (event) {
-            return (
-              '<span class="cal-chip ' +
-              whoClass(event.who) +
-              '" data-edit-cal="' +
-              event.id +
-              '">' +
-              escapeHtml(event.title) +
-              "</span>"
-            );
-          })
-          .join("") +
-        (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + "</span>" : "") +
-        "</div>";
-    });
-
-    html +=
-      '</div><div class="cal-legend"><span class="cal-chip girls-lg pink">' +
-      t("whoGirls") +
-      '</span><span class="cal-chip rose">' +
-      t("whoAblalar") +
-      '</span><span class="cal-chip blue">' +
-      t("whoAbiler") +
-      '</span><span class="cal-chip ink">' +
-      t("whoGenel") +
-      "</span></div></section>";
-
-    html +=
-      '<div class="gundem-cols"><section class="card"><div class="toolbar"><div><div class="quiet">' +
+      '</h2><div class="gundem-cols"><section class="card"><div class="toolbar"><h3 style="margin:0">' +
       t("dayEvents") +
-      "</div><h3 style=\"margin:4px 0 0\">" +
-      escapeHtml(prettyDay) +
-      '</h3></div><button class="btn" data-open-cal="">' +
+      '</h3><button class="btn" data-open-cal="">' +
       t("addEvent") +
       "</button></div>" +
-      (dayEvents.length
+      (upcoming.length
         ? '<div class="list">' +
-          dayEvents
+          upcoming
             .map(function (event) {
               return (
                 '<div class="item cal-item"><span class="dot ' +
@@ -1603,8 +1465,10 @@
                 '"></span><div><b>' +
                 escapeHtml(event.title) +
                 '</b><div class="quiet">' +
+                escapeHtml(formatWeek(event.start)) +
+                (event.end && event.end !== event.start ? " – " + escapeHtml(formatWeek(event.end)) : "") +
+                " · " +
                 escapeHtml(whoLabel(event.who)) +
-                (event.start !== event.end ? " · " + event.start.slice(8) + "–" + event.end.slice(8) : "") +
                 "</div></div><button class=\"btn light tiny\" data-edit-cal=\"" +
                 event.id +
                 '">✎</button></div>'
@@ -1612,7 +1476,7 @@
             })
             .join("") +
           "</div>"
-        : '<p class="empty">' + t("noDayEvents") + "</p>") +
+        : '<p class="empty">' + t("emptyList") + "</p>") +
       "</section><section class=\"card notes-card\"><div class=\"toolbar\"><h3 style=\"margin:0\">" +
       t("calNotes") +
       '</h3></div><form class="addbar" data-add="gundemNotes"><textarea name="title" rows="1" placeholder="' +
@@ -1666,7 +1530,6 @@
         : '<p class="empty">' + t("emptyList") + "</p>") +
       "</section></div>";
 
-    const tbd = tbdEvents();
     html +=
       '<section class="card" style="margin-top:12px"><div class="quiet">' +
       t("tbd") +
@@ -1691,7 +1554,6 @@
       "</section>";
     return html;
   }
-
   function checklistView(key, title, placeholder) {
     const items = state[key];
     return (
