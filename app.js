@@ -50,6 +50,7 @@
       thisWeek: "Bu hafta",
       weekGoal: "Bu haftanın goal'ü",
       pinHere: "buraya pinle…",
+      homePhoto: "kızlarımız ♡",
       notesHere: "notlarını buraya yaz…",
       emptyList: "henüz yok — ekle.",
       add: "Ekle",
@@ -156,6 +157,7 @@
       thisWeek: "This week",
       weekGoal: "This week's goal",
       pinHere: "pin it here…",
+      homePhoto: "our girls ♡",
       notesHere: "write notes here…",
       emptyList: "nothing yet — add one.",
       add: "Add",
@@ -1078,6 +1080,11 @@
       '">' +
       escapeHtml(state.weeklyGoal) +
       "</textarea></section></div>" +
+      '<figure class="home-polaroid"><span class="pin"></span><span class="tape tape-l"></span><span class="tape tape-r"></span><img src="./girls.jpg" alt="' +
+      escapeHtml(t("homePhoto")) +
+      '" /><figcaption class="hand">' +
+      escapeHtml(t("homePhoto")) +
+      "</figcaption></figure>" +
       '<div class="home-grid">' +
       '<a class="card jump peach" href="#/istisare"><span class="quiet">' +
       t("thisWeek") +

@@ -205,6 +205,62 @@ a {
   margin-bottom: 12px;
 }
 
+.home-polaroid {
+  position: relative;
+  width: min(440px, 100%);
+  margin: 6px auto 22px;
+  padding: 12px 12px 8px;
+  background: #fffef9;
+  border: 1px solid #f0e4da;
+  border-radius: 6px 6px 18px 18px;
+  box-shadow: 0 14px 28px rgba(43, 36, 34, 0.08), 0 2px 0 #f3e6dc;
+  transform: rotate(-1.4deg);
+}
+
+.home-polaroid .pin {
+  z-index: 2;
+}
+
+.home-polaroid .tape {
+  position: absolute;
+  top: -10px;
+  width: 72px;
+  height: 22px;
+  background: rgba(255, 215, 194, 0.72);
+  border-radius: 2px;
+  transform: rotate(-8deg);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+}
+
+.home-polaroid .tape-l {
+  left: 18px;
+}
+
+.home-polaroid .tape-r {
+  right: 18px;
+  background: rgba(207, 238, 221, 0.8);
+  transform: rotate(9deg);
+}
+
+.home-polaroid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center 40%;
+  border-radius: 4px;
+  background: var(--peach);
+}
+
+.home-polaroid figcaption {
+  margin: 8px 4px 2px;
+  text-align: center;
+  font-family: Caveat, cursive;
+  font-size: 26px;
+  color: #c9785e;
+}
+
 .home-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1602,6 +1658,16 @@ body.zv-page {
   .lang button {
     min-height: 36px;
     min-width: 40px;
+  }
+
+  .home-polaroid {
+    width: 100%;
+    margin-bottom: 16px;
+    transform: rotate(-0.6deg);
+  }
+
+  .home-polaroid figcaption {
+    font-size: 22px;
   }
 
   .home-grid {
