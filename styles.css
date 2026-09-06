@@ -26,10 +26,25 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: Outfit, system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  padding: 18px 16px 56px;
+  padding: 18px 16px calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow-x: hidden;
+}
+
+button,
+a.tab,
+a.btn,
+.zv-cell,
+.cal-cell,
+.jump,
+.sheet-tab {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(43, 36, 34, 0.08);
 }
 
 button,
@@ -125,6 +140,10 @@ a {
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 600;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .tab.on {
@@ -1487,7 +1506,6 @@ body.zv-page {
 
 @media (max-width: 800px) {
   .hero,
-  .home-grid,
   .mentor-top,
   .form-grid,
   .charts,
@@ -1496,9 +1514,12 @@ body.zv-page {
   .gundem-cols,
   .sohbet-card,
   .zv-layout,
-  .zv-def,
-  .zv-timegrid {
+  .zv-def {
     grid-template-columns: 1fr;
+  }
+
+  .ziyaret-home {
+    grid-column: 1 / -1;
   }
 
   .brand h1 {
@@ -1511,7 +1532,250 @@ body.zv-page {
   }
 
   .zv-mini {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gcal-frame {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    padding: 12px 12px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .top {
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .mark {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+  }
+
+  .brand p {
+    font-size: 12px;
+  }
+
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -12px 14px;
+    padding: 0 12px 10px;
+    gap: 8px;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    min-height: 42px;
+    padding: 10px 14px;
+  }
+
+  .lang button {
+    min-height: 36px;
+    min-width: 40px;
+  }
+
+  .home-grid {
+    gap: 8px;
+  }
+
+  .jump {
+    min-height: 92px;
+    padding: 12px;
+  }
+
+  .jump b {
+    font-size: 16px;
+  }
+
+  .addbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .addbar .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .item {
+    flex-wrap: wrap;
+  }
+
+  .item textarea,
+  .item input[type="text"] {
+    flex: 1 1 100%;
+    font-size: 16px;
+  }
+
+  .item .btn {
+    min-height: 40px;
+  }
+
+  .week-top {
+    flex-wrap: wrap;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .btn {
+    min-height: 44px;
+  }
+
+  .cal-nav,
+  .zv-cal .cal-nav {
+    flex-wrap: wrap;
+  }
+
+  .cal-nav b {
+    flex: 1 1 100%;
+    order: -1;
+    font-size: 16px;
+  }
+
+  .cal-week,
+  .cal-grid,
+  .zv-grid {
+    gap: 4px;
+  }
+
+  .cal-week span {
+    font-size: 10px;
+    padding-bottom: 2px;
+  }
+
+  .cal-cell,
+  .zv-cell {
+    min-height: 52px;
+    padding: 4px 3px 3px;
+    border-radius: 10px;
+    gap: 1px;
+  }
+
+  .zv-cal .cal-num,
+  .cal-num {
+    font-size: 12px;
+  }
+
+  .zv-abla {
+    font-size: 9px;
+  }
+
+  .zv-dots {
+    gap: 2px;
+  }
+
+  .zv-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .zv-tools .row {
+    width: 100%;
+  }
+
+  .zv-tools .btn,
+  .zv-tools a.btn {
+    flex: 1 1 calc(50% - 8px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .zv-slot,
+  .zv-pick {
+    min-height: 48px;
+    padding: 12px;
+  }
+
+  .zv-slot b {
+    font-size: 18px;
+  }
+
+  .zv-form .btn,
+  .zv-ok .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .zv-timegrid {
     grid-template-columns: 1fr;
+  }
+
+  .sheet-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sheet-tab {
+    flex: 0 0 auto;
+    min-height: 42px;
+  }
+
+  .modal-back {
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .modal {
+    width: 100%;
+    max-height: 92vh;
+    overflow: auto;
+    border-radius: 20px 20px 0 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .gcal-frame {
+    min-height: 360px;
+  }
+
+  .zv-top {
+    flex-direction: column;
+  }
+
+  .zv-sync {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .zv-legend {
+    gap: 6px;
+  }
+
+  .zv-pill {
+    min-height: 36px;
+  }
+
+  .veli-note {
+    flex-direction: column;
+  }
+
+  .veli-note .btn {
+    width: 100%;
+  }
+
+  #copy-veli {
+    width: 100%;
   }
 }
 
