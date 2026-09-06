@@ -175,6 +175,7 @@
       capacity: 1,
       times: JSON.parse(JSON.stringify(DEFAULT_TIMES)),
       days: {},
+      removed: {},
       updated: 0,
     };
   }
@@ -193,6 +194,7 @@
       if (raw) board = Object.assign(defaultBoard(), JSON.parse(raw));
       if (!board.times) board.times = JSON.parse(JSON.stringify(DEFAULT_TIMES));
       if (!board.days) board.days = {};
+      if (!board.removed) board.removed = {};
       if (!board.capacity) board.capacity = 1;
     } catch (e) {}
   }
@@ -300,21 +302,46 @@
   }
 
   function ensureDay(dateStr, ablaId) {
+    if (board.removed) delete board.removed[dateStr];
     if (!board.days[dateStr]) {
       board.days[dateStr] = {
         abla: ablaId,
         times: (board.times[ablaId] || DEFAULT_TIMES.asli).slice(),
         note: "",
         signups: [],
+        paintedAt: Date.now(),
       };
     } else {
       board.days[dateStr].abla = ablaId;
+      board.days[dateStr].paintedAt = Date.now();
       if (!board.days[dateStr].times || !board.days[dateStr].times.length) {
         board.days[dateStr].times = (board.times[ablaId] || DEFAULT_TIMES.asli).slice();
       }
       if (!board.days[dateStr].signups) board.days[dateStr].signups = [];
     }
     return board.days[dateStr];
+  }
+
+  function dropDay(dateStr) {
+    if (!dateStr) return;
+    if (!board.removed) board.removed = {};
+    board.removed[dateStr] = Date.now();
+    delete board.days[dateStr];
+  }
+
+  function applyRemoved(next) {
+    if (!next) return next;
+    if (!next.removed) next.removed = {};
+    Object.keys(next.removed).forEach(function (k) {
+      const day = next.days && next.days[k];
+      const painted = (day && day.paintedAt) || 0;
+      if (next.removed[k] >= painted) {
+        if (next.days) delete next.days[k];
+      } else {
+        delete next.removed[k];
+      }
+    });
+    return next;
   }
 
   function normTime(value) {
@@ -1086,7 +1113,9 @@
     const clearDay = host.querySelector("#zv-clear-day");
     if (clearDay) {
       clearDay.onclick = function () {
-        delete board.days[selected];
+        dropDay(selected);
+        selected = "";
+        pickedTime = "";
         persist();
         render();
       };
@@ -1165,7 +1194,7 @@
       prune.onclick = function () {
         const now = today();
         Object.keys(board.days).forEach(function (k) {
-          if (k < now && !(board.days[k].signups || []).length) delete board.days[k];
+          if (k < now && !(board.days[k].signups || []).length) dropDay(k);
         });
         persist();
         render();
@@ -1195,17 +1224,24 @@
   }
 
   function mergeBoards(remote, local) {
-    if (!remote || !remote.days) return local;
+    if (!remote || !remote.days) return applyRemoved(local);
     const remoteNewer = (remote.updated || 0) >= (local.updated || 0);
     const base = JSON.parse(JSON.stringify(remoteNewer ? remote : local));
     const other = remoteNewer ? local : remote;
     if (!base.times) base.times = JSON.parse(JSON.stringify(DEFAULT_TIMES));
     if (other.times) base.times = Object.assign(base.times, other.times);
     if (!base.days) base.days = {};
+    const removed = {};
+    [base.removed, other.removed, local.removed, remote.removed].forEach(function (map) {
+      Object.keys(map || {}).forEach(function (k) {
+        removed[k] = Math.max(removed[k] || 0, Number(map[k]) || 0);
+      });
+    });
+    base.removed = removed;
     Object.keys(other.days || {}).forEach(function (k) {
       const od = other.days[k];
       if (!base.days[k]) {
-        if (!remoteNewer) base.days[k] = od;
+        if (!removed[k] || ((od && od.paintedAt) || 0) > removed[k]) base.days[k] = od;
         return;
       }
       const seen = {};
@@ -1216,6 +1252,7 @@
         signups.push(s);
       });
       base.days[k].signups = signups;
+      base.days[k].paintedAt = Math.max(Number(base.days[k].paintedAt) || 0, Number(od.paintedAt) || 0);
       if (remoteNewer && remote.days[k]) {
         base.days[k].abla = remote.days[k].abla;
         base.days[k].times = remote.days[k].times;
@@ -1223,7 +1260,7 @@
       }
     });
     if (remoteNewer && remote.capacity) base.capacity = remote.capacity;
-    return base;
+    return applyRemoved(base);
   }
 
   function persist() {
