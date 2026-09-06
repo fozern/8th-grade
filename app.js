@@ -367,12 +367,58 @@
     "• Önümüzdeki haftaya kadar velilerimizi arayıp konuşalım.\n" +
     "• Her abla en az üç veli araması yapsın.";
 
-  function seedIstisareAug28(data) {
+  const ISTISARE_SEP04 =
+    "Veli iletişimi ve ziyaretleri\n" +
+    "• Bu hafta veya önümüzdeki salı 3–4 veli ziyareti yapılacak.\n" +
+    "    – Nazlıcan Hocam: belirli velileri ziyaret edecek.\n" +
+    "    – Aslı: pazar günü 3 veli ziyareti yapacak?\n" +
+    "• Yarın piknikte velilerin uygunluklarını soralım.\n" +
+    "• Yarın piknikten önce velileri arayarak şunları soralım:\n" +
+    "    – Yarın pikniğe geliyor musunuz?\n" +
+    "    – Çocuğunuz Kur’an Academy’ye kayıt oldu mu?\n" +
+    "    – Kur’an dersi alıyor mu?\n" +
+    "\n" +
+    "Yarınki piknik\n" +
+    "• Katılacak tüm velilerin 75 doları gönderdiğinden emin olalım.\n" +
+    "• Velilerden, namaz kılmak için yer örtüsü getirmelerini rica edelim.\n" +
+    "• Kızların namaz kıyafetlerini getirmelerini hatırlatalım.\n" +
+    "\n" +
+    "Gelecek haftanın programı\n" +
+    "• Gelecek haftanın programını ayrıntılı şekilde planlayalım.\n" +
+    "• Academic Calendar okulun web sitesinde bulunuyor.\n" +
+    "• Salavat yarışmasını duyuralım.\n" +
+    "• Çocukları motive edecek bir yarışma planı hazırlayalım.\n" +
+    "• Meryem Hoca yarışmanın flyer’ını hazırlayacak inşallah.\n" +
+    "• Gelecek haftanın aktivitesi: zikirmatik süsleme.\n" +
+    "• Nazlıcan Hocam ezber kartlarını getirecek inşallah.\n" +
+    "• Hediye paketlerini gelecek hafta çocuklara verelim.\n" +
+    "\n" +
+    "Sipariş ve alışveriş\n" +
+    "• Yarın zikirmatik süsleme malzemelerini sipariş edelim.\n" +
+    "• MP3 çalar ve zikirmatik alalım.\n" +
+    "• Kızlar için güzel defterler alalım.\n" +
+    "• Düz ve güzel binder’lar alalım; çıktılarını içine yerleştirelim.\n" +
+    "• Tote bag alalım.\n" +
+    "• Pazartesi gününe kadar tote bag seçeneklerini belirleyip gruba atalım.\n" +
+    "• Ant Store’un indirim yapıp yapmadığını soralım.\n" +
+    "• Paraları çekelim.\n" +
+    "\n" +
+    "Ders ve manevi içerik\n" +
+    "• Good Character kitabıyla başlayalım.\n" +
+    "• Bu hafta Sonsuz Nur vaazlarını dinleyelim.\n" +
+    "• Çetele hazırlayalım.\n" +
+    "• Efendimiz (sav) hakkında bir makale belirleyelim.";
+
+  function seedIstisareNotes(data) {
     if (!data.istisare) data.istisare = {};
     if (!String(data.istisare["2026-08-28"] || "").trim()) {
       data.istisare["2026-08-28"] = ISTISARE_AUG28;
     }
+    if (!String(data.istisare["2026-09-04"] || "").trim()) {
+      data.istisare["2026-09-04"] = ISTISARE_SEP04;
+    }
     data.istisareSeededAug28 = true;
+    data.istisareSeededSep04 = true;
   }
 
   function defaultState() {
@@ -385,8 +431,9 @@
       ],
       events: [],
       entries: [],
-      istisare: { "2026-08-28": ISTISARE_AUG28 },
+      istisare: { "2026-08-28": ISTISARE_AUG28, "2026-09-04": ISTISARE_SEP04 },
       istisareSeededAug28: true,
+      istisareSeededSep04: true,
       weeklyGoal: "",
       mentorGoals: {},
       agenda: [],
@@ -599,7 +646,7 @@
       if (!data.gundemNotes) data.gundemNotes = [];
       if (!data.mufredat) data.mufredat = {};
       if (data.googleCal == null) data.googleCal = "";
-      seedIstisareAug28(data);
+      seedIstisareNotes(data);
       return data;
     } catch (e) {
       return defaultState();
@@ -1083,11 +1130,11 @@
       html +=
         '<section class="week' +
         (week === now ? " now" : "") +
-        (week === "2026-08-28" ? " seeded" : "") +
+        (week === "2026-08-28" || week === "2026-09-04" ? " seeded" : "") +
         '"><div class="week-top"><b>' +
         escapeHtml(formatWeek(week)) +
         "</b>" +
-        (week === "2026-08-28" ? '<span class="week-source">İstişare notları</span>' : "") +
+        (week === "2026-08-28" || week === "2026-09-04" ? '<span class="week-source">İstişare notları</span>' : "") +
         (week === now ? '<span class="badge">' + t("thisWeek") + "</span>" : "") +
         '</div><textarea data-istisare="' +
         week +
