@@ -127,6 +127,11 @@
       saved: "kaydedildi ✓",
       copyVeli: "Veli linkini kopyala",
       veliLinkNote: "Veli ziyareti linki",
+      addNote: "Not ekle",
+      moveCard: "taşı",
+      noteTitle: "başlık…",
+      noteBody: "not yaz…",
+      dragHint: "tutup sürükle — not da ekleyebilirsin",
       satEvery: "her Cumartesi",
       calendar: "Takvim",
       gcal: "Google Calendar",
@@ -234,6 +239,11 @@
       saved: "saved ✓",
       copyVeli: "Copy parent link",
       veliLinkNote: "Parent visit link",
+      addNote: "Add note",
+      moveCard: "move",
+      noteTitle: "title…",
+      noteBody: "write a note…",
+      dragHint: "drag cards — you can add notes too",
       satEvery: "every Saturday",
       calendar: "Calendar",
       gcal: "Google Calendar",
@@ -448,6 +458,7 @@
       gundemNotes: [],
       mufredat: {},
       googleCal: "",
+      homeWidgets: defaultHomeWidgets(),
     };
   }
 
@@ -649,6 +660,7 @@
       if (!data.mufredat) data.mufredat = {};
       if (data.googleCal == null) data.googleCal = "";
       seedIstisareNotes(data);
+      ensureHomeWidgets(data);
       return data;
     } catch (e) {
       return defaultState();
@@ -1066,61 +1078,170 @@
     );
   }
 
+  function defaultHomeWidgets() {
+    return [
+      { id: "hadith", type: "hadith" },
+      { id: "goal", type: "goal" },
+      { id: "photo", type: "photo" },
+      { id: "istisare", type: "jump", href: "#/istisare", color: "peach", label: "istisare", quiet: "thisWeek" },
+      { id: "gundem", type: "jump", href: "#/gundemler", color: "mint", label: "agenda" },
+      { id: "mufredat", type: "jump", href: "#/mufredat", color: "blush", label: "mufredat" },
+      { id: "mentor", type: "jump", href: "#/mentor", color: "butter", label: "mentor" },
+      { id: "ziyaret", type: "ziyaret", color: "peach" },
+    ];
+  }
+
+  function ensureHomeWidgets(data) {
+    if (!Array.isArray(data.homeWidgets) || !data.homeWidgets.length) {
+      data.homeWidgets = defaultHomeWidgets();
+      return;
+    }
+    const have = {};
+    data.homeWidgets.forEach(function (w) {
+      if (w && w.id) have[w.id] = true;
+    });
+    defaultHomeWidgets().forEach(function (w) {
+      if (!have[w.id]) data.homeWidgets.push(w);
+    });
+  }
+
+  function widgetHandle() {
+    return '<button type="button" class="widget-handle" aria-label="' + t("moveCard") + '">⋮⋮</button>';
+  }
+
+  function jumpWidgetValue(id) {
+    if (id === "istisare") return formatWeek(currentFriday());
+    if (id === "gundem") return String(upcomingCal().length);
+    if (id === "mufredat") {
+      const now = currentSaturday();
+      const week = mufredatWeeks().find(function (w) { return w.date === now; }) || mufredatWeeks()[0];
+      return t("weekN") + " " + week.n;
+    }
+    if (id === "mentor") {
+      return (
+        WEEKS.filter(function (week) {
+          return state.mentorGoals[week] && state.mentorGoals[week].done;
+        }).length +
+        "/" +
+        WEEKS.length
+      );
+    }
+    return "";
+  }
+
+  function widgetHtml(w) {
+    const handle = widgetHandle();
+    if (w.type === "hadith") {
+      return (
+        '<article class="widget hadith-widget" data-widget="' +
+        w.id +
+        '">' +
+        handle +
+        '<p>“' +
+        HADITH +
+        '”</p><small>(Buhari)</small></article>'
+      );
+    }
+    if (w.type === "goal") {
+      return (
+        '<article class="widget pin-wrap" data-widget="' +
+        w.id +
+        '"><span class="pin"></span>' +
+        handle +
+        '<p class="hand">' +
+        t("weekGoal") +
+        ' <em class="save-hint"></em></p><textarea id="weekly-goal" placeholder="' +
+        t("pinHere") +
+        '">' +
+        escapeHtml(state.weeklyGoal) +
+        "</textarea></article>"
+      );
+    }
+    if (w.type === "photo") {
+      return (
+        '<article class="widget photo-widget wide" data-widget="' +
+        w.id +
+        '">' +
+        handle +
+        '<figure class="home-polaroid"><span class="pin"></span><span class="tape tape-l"></span><span class="tape tape-r"></span><img src="./girls.jpg" alt="' +
+        escapeHtml(t("homePhoto")) +
+        '" /><figcaption class="hand">' +
+        escapeHtml(t("homePhoto")) +
+        "</figcaption></figure></article>"
+      );
+    }
+    if (w.type === "jump") {
+      return (
+        '<article class="widget jump ' +
+        w.color +
+        '" data-widget="' +
+        w.id +
+        '">' +
+        handle +
+        '<a href="' +
+        w.href +
+        '"><span class="quiet">' +
+        t(w.quiet || w.label) +
+        "</span><b>" +
+        escapeHtml(jumpWidgetValue(w.id)) +
+        "</b></a></article>"
+      );
+    }
+    if (w.type === "ziyaret") {
+      return (
+        '<article class="widget jump peach ziyaret-home" data-widget="' +
+        w.id +
+        '">' +
+        handle +
+        '<a href="#/ziyaret"><span class="quiet">' +
+        t("ziyaret") +
+        "</span><b>Veli</b></a><input class=\"zv-home-url\" id=\"home-veli-url\" readonly value=\"" +
+        escapeHtml(veliUrl()) +
+        '" /><button type="button" class="btn tiny" id="copy-veli">' +
+        t("copyVeli") +
+        "</button></article>"
+      );
+    }
+    if (w.type === "note") {
+      return (
+        '<article class="widget note-widget ' +
+        (w.color || "peach") +
+        '" data-widget="' +
+        w.id +
+        '"><span class="pin"></span>' +
+        handle +
+        '<button type="button" class="widget-del" data-del-widget="' +
+        w.id +
+        '">×</button><input class="note-title" data-note-title="' +
+        w.id +
+        '" placeholder="' +
+        t("noteTitle") +
+        '" value="' +
+        escapeHtml(w.title || "") +
+        '" /><textarea data-note-text="' +
+        w.id +
+        '" placeholder="' +
+        t("noteBody") +
+        '">' +
+        escapeHtml(w.text || "") +
+        "</textarea></article>"
+      );
+    }
+    return "";
+  }
+
   function homeView() {
-    const friday = currentFriday();
+    ensureHomeWidgets(state);
     return (
-      '<div class="hero">' +
-      '<section class="card hadith"><p>“' +
-      HADITH +
-      '”</p><small>(Buhari)</small></section>' +
-      '<section class="pin-wrap"><span class="pin"></span><p class="hand">' +
-      t("weekGoal") +
-      ' <em class="save-hint"></em></p><textarea id="weekly-goal" placeholder="' +
-      t("pinHere") +
-      '">' +
-      escapeHtml(state.weeklyGoal) +
-      "</textarea></section></div>" +
-      '<figure class="home-polaroid"><span class="pin"></span><span class="tape tape-l"></span><span class="tape tape-r"></span><img src="./girls.jpg" alt="' +
-      escapeHtml(t("homePhoto")) +
-      '" /><figcaption class="hand">' +
-      escapeHtml(t("homePhoto")) +
-      "</figcaption></figure>" +
-      '<div class="home-grid">' +
-      '<a class="card jump peach" href="#/istisare"><span class="quiet">' +
-      t("thisWeek") +
-      "</span><b>" +
-      formatWeek(friday) +
-      "</b></a>" +
-      '<a class="card jump mint" href="#/gundemler"><span class="quiet">' +
-      t("agenda") +
-      "</span><b>" +
-      upcomingCal().length +
-      "</b></a>" +
-      '<a class="card jump blush" href="#/mufredat"><span class="quiet">' +
-      t("mufredat") +
-      "</span><b>" +
-      (function () {
-        const now = currentSaturday();
-        const week = mufredatWeeks().find(function (w) { return w.date === now; }) || mufredatWeeks()[0];
-        return t("weekN") + " " + week.n;
-      })() +
-      "</b></a>" +
-      '<a class="card jump butter" href="#/mentor"><span class="quiet">' +
-      t("mentor") +
-      "</span><b>" +
-      WEEKS.filter(function (week) {
-        return state.mentorGoals[week] && state.mentorGoals[week].done;
-      }).length +
-      "/" +
-      WEEKS.length +
-      "</b></a>" +
-      '<div class="card jump peach ziyaret-home"><a href="#/ziyaret"><span class="quiet">' +
-      t("ziyaret") +
-      "</span><b>Veli</b></a><input class=\"zv-home-url\" id=\"home-veli-url\" readonly value=\"" +
-      escapeHtml(veliUrl()) +
-      '" /><button type="button" class="btn tiny" id="copy-veli">' +
-      t("copyVeli") +
-      "</button></div></div>"
+      '<div class="home-board-bar"><span class="quiet">' +
+      t("dragHint") +
+      '</span><button type="button" class="btn pink tiny" id="add-home-note">+ ' +
+      t("addNote") +
+      "</button></div><div class=\"home-board\" id=\"home-board\">" +
+      state.homeWidgets
+        .map(widgetHtml)
+        .join("") +
+      "</div>"
     );
   }
 
@@ -2200,6 +2321,110 @@
         flashSaved(btn);
       };
     });
+
+    const addNote = document.getElementById("add-home-note");
+    if (addNote) {
+      addNote.onclick = function () {
+        const colors = ["peach", "mint", "blush", "butter", "sky"];
+        const n = (state.homeWidgets || []).filter(function (w) {
+          return w.type === "note";
+        }).length;
+        state.homeWidgets.push({
+          id: "note-" + uid(),
+          type: "note",
+          color: colors[n % colors.length],
+          title: "",
+          text: "",
+        });
+        save();
+        render();
+      };
+    }
+    document.querySelectorAll("[data-note-title]").forEach(function (box) {
+      box.oninput = function () {
+        const id = box.getAttribute("data-note-title");
+        const w = (state.homeWidgets || []).find(function (item) {
+          return item.id === id;
+        });
+        if (w) {
+          w.title = box.value;
+          save();
+        }
+      };
+    });
+    document.querySelectorAll("[data-note-text]").forEach(function (box) {
+      box.oninput = function () {
+        const id = box.getAttribute("data-note-text");
+        const w = (state.homeWidgets || []).find(function (item) {
+          return item.id === id;
+        });
+        if (w) {
+          w.text = box.value;
+          save();
+        }
+        growBox(box);
+      };
+    });
+    document.querySelectorAll("[data-del-widget]").forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = btn.getAttribute("data-del-widget");
+        state.homeWidgets = (state.homeWidgets || []).filter(function (w) {
+          return w.id !== id;
+        });
+        save();
+        render();
+      };
+    });
+    (function bindHomeDrag() {
+      const board = document.getElementById("home-board");
+      if (!board) return;
+      let dragEl = null;
+      board.querySelectorAll(".widget-handle").forEach(function (handle) {
+        handle.onpointerdown = function (e) {
+          if (e.button) return;
+          dragEl = handle.closest("[data-widget]");
+          if (!dragEl) return;
+          dragEl.classList.add("dragging");
+          dragEl.style.pointerEvents = "none";
+          try {
+            handle.setPointerCapture(e.pointerId);
+          } catch (err) {}
+          e.preventDefault();
+        };
+      });
+      board.onpointermove = function (e) {
+        if (!dragEl) return;
+        const over = document.elementFromPoint(e.clientX, e.clientY);
+        const target = over && over.closest("#home-board [data-widget]");
+        if (!target || target === dragEl) return;
+        const rect = target.getBoundingClientRect();
+        const before = e.clientY < rect.top + rect.height / 2;
+        if (before) board.insertBefore(dragEl, target);
+        else board.insertBefore(dragEl, target.nextSibling);
+      };
+      function endDrag() {
+        if (!dragEl) return;
+        dragEl.classList.remove("dragging");
+        dragEl.style.pointerEvents = "";
+        const ids = [].map.call(board.querySelectorAll("[data-widget]"), function (el) {
+          return el.getAttribute("data-widget");
+        });
+        const next = [];
+        ids.forEach(function (id) {
+          const w = state.homeWidgets.find(function (item) {
+            return item.id === id;
+          });
+          if (w) next.push(w);
+        });
+        if (next.length) state.homeWidgets = next;
+        save();
+        dragEl = null;
+      }
+      board.onpointerup = endDrag;
+      board.onpointercancel = endDrag;
+    })();
 
     document.querySelectorAll("[data-istisare]").forEach(function (box) {
       box.oninput = function () {
