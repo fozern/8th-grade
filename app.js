@@ -712,11 +712,10 @@
   function route() {
     const parts = (location.hash || "#/").replace(/^#/, "").split("/").filter(Boolean);
     const page = parts[0] || "home";
-    if (page === "family" || page === "abla" || page === "cetele" || page === "etkinlikler" || page === "ideas" || page === "upcoming") {
+    if (page === "family" || page === "abla" || page === "cetele" || page === "etkinlikler" || page === "ideas" || page === "upcoming" || page === "takvim" || page === "calendar") {
       return { page: "home" };
     }
     if (page === "rehber") return { page: "rehber", groupId: parts[1] || "asli" };
-    if (page === "takvim" || page === "calendar") return { page: "takvim" };
     if (page === "ziyaret") return { page: "ziyaret" };
     return { page: page };
   }
@@ -799,7 +798,6 @@
     const on =
       view.page === page ||
       (page === "rehber" && view.page === "rehber") ||
-      (page === "takvim" && view.page === "takvim") ||
       (page === "ziyaret" && view.page === "ziyaret");
     return '<a class="tab' + (on ? " on" : "") + '" href="' + href + '">' + label + "</a>";
   }
@@ -812,7 +810,7 @@
     const app = document.getElementById("app");
     app.innerHTML =
       '<div class="shell' +
-      (view.page === "rehber" || view.page === "gundemler" || view.page === "mufredat" || view.page === "takvim" || view.page === "ziyaret" ? " wide" : "") +
+      (view.page === "rehber" || view.page === "gundemler" || view.page === "mufredat" || view.page === "ziyaret" ? " wide" : "") +
       '">' +
       header() +
       tabs() +
@@ -820,7 +818,6 @@
       (view.page === "istisare" ? istisareView() : "") +
       (view.page === "mentor" ? mentorView() : "") +
       (view.page === "mufredat" ? mufredatView() : "") +
-      (view.page === "takvim" ? calendarSyncView() : "") +
       (view.page === "ziyaret" ? '<div id="ziyaret-admin"></div>' : "") +
       (view.page === "gundemler" ? gundemView() : "") +
       (view.page === "rehber" ? contactsView(view.groupId) : "") +
@@ -866,7 +863,6 @@
       navLink("#/mufredat", "mufredat", t("mufredat")) +
       navLink("#/gundemler", "gundemler", t("agenda")) +
       navLink("#/rehber/asli", "rehber", t("contacts")) +
-      navLink("#/takvim", "takvim", t("calendar")) +
       navLink("#/ziyaret", "ziyaret", t("ziyaret")) +
       "</nav>"
     );
@@ -1063,11 +1059,6 @@
       }).length +
       "/" +
       WEEKS.length +
-      "</b></a>" +
-      '<a class="card jump sky" href="#/takvim"><span class="quiet">' +
-      t("gcal") +
-      "</span><b>" +
-      t("calendar") +
       "</b></a>" +
       '<div class="card jump peach ziyaret-home"><a href="#/ziyaret"><span class="quiet">' +
       t("ziyaret") +
@@ -2328,31 +2319,6 @@
         render();
       };
     });
-
-    const gcalForm = document.getElementById("gcal-form");
-    if (gcalForm) {
-      gcalForm.onsubmit = function (e) {
-        e.preventDefault();
-        const box = document.getElementById("gcal-input");
-        state.googleCal = parseGoogleCalSrc(box && box.value);
-        save();
-        render();
-      };
-    }
-    const gcalClear = document.getElementById("gcal-clear");
-    if (gcalClear) {
-      gcalClear.onclick = function () {
-        state.googleCal = "";
-        save();
-        render();
-      };
-    }
-    const gcalIcs = document.getElementById("gcal-ics");
-    if (gcalIcs) {
-      gcalIcs.onclick = function () {
-        downloadIcs();
-      };
-    }
 
     document.querySelectorAll("[data-add]").forEach(function (form) {
       const box = form.querySelector("textarea, input");
