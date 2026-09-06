@@ -1,8 +1,8 @@
 (function (root) {
   const STORE = "core-es-ziyaret-v1";
-  const BOARD_KEY = "core-es-ziyaret-board";
   const LAST_KEY = "core-es-ziyaret-last";
-  const CLOUD = "https://api.restful-api.dev/objects";
+  const CLOUD_URL = "https://mantledb.sh/v2/coreesziyaret/board";
+  const CLOUD_KEY = "9990098c2410c4282831917e773f023e1cde6246b01e2cd2dc16fd9c26de3a93";
   const ABLAS = [
     { id: "asli", name: "Asli", short: "Asli" },
     { id: "nazlican", name: "Nazlican", short: "Nazlican" },
@@ -50,7 +50,7 @@
       share: "WhatsApp'tan gönder",
       needLink: "Bu sayfa eksik. Ablalarından doğru veli linkini iste.",
       syncOn: "kayıtlar paylaşılıyor",
-      syncOff: "önce veli linkini kopyala — paylaşım açılır",
+      syncOff: "paylaşım bağlanıyor…",
       taken: "bu saat dolu — başka saat seç",
       needName: "veli ve öğrenci adını yaz",
       slotsLeft: "boş",
@@ -104,7 +104,7 @@
       share: "Send on WhatsApp",
       needLink: "This page is missing the shared link. Ask for the parent link.",
       syncOn: "signups are shared",
-      syncOff: "copy the parent link first to start sharing",
+      syncOff: "connecting…",
       taken: "that time is full — pick another",
       needName: "write parent and student names",
       slotsLeft: "open",
@@ -138,6 +138,9 @@
   let toastTimer = 0;
   let mine = loadMine();
   let lastNames = loadLast();
+  let cloudOk = false;
+  let pushAgain = false;
+  let pushChain = Promise.resolve();
 
   function t(key) {
     return (I18N[lang] || I18N.tr)[key] || key;
@@ -172,7 +175,7 @@
       capacity: 1,
       times: JSON.parse(JSON.stringify(DEFAULT_TIMES)),
       days: {},
-      updated: Date.now(),
+      updated: 0,
     };
   }
 
@@ -225,25 +228,18 @@
     localStorage.setItem(LAST_KEY, JSON.stringify(lastNames));
   }
 
-  function blobId() {
-    return queryBoard() || localStorage.getItem(BOARD_KEY) || "";
-  }
-
-  function setBlobId(id) {
-    if (!id || id === "local") return;
-    localStorage.setItem(BOARD_KEY, id);
+  function siteDir() {
+    let dir = location.pathname.replace(/index\.html$/i, "").replace(/ziyaret\.html$/i, "");
+    if (!dir.endsWith("/")) dir += "/";
+    return location.origin + dir;
   }
 
   function isShared() {
-    const id = blobId();
-    return !!(id && id !== "local");
+    return cloudOk;
   }
 
   function veliLink() {
-    const id = blobId();
-    let dir = location.pathname.replace(/index\.html$/i, "").replace(/ziyaret\.html$/i, "");
-    if (!dir.endsWith("/")) dir += "/";
-    return location.origin + dir + "ziyaret.html?b=" + encodeURIComponent(id || "local") + "&d=" + encodeConfig();
+    return siteDir() + "ziyaret.html";
   }
 
   function encodeConfig() {
@@ -1238,27 +1234,23 @@
     pushCloud();
   }
 
-  function jsonHeaders() {
-    return { "Content-Type": "application/json", Accept: "application/json" };
-  }
-
-  function wrapBoard() {
-    return JSON.stringify({ name: "core-es-ziyaret", data: board });
+  function cloudHeaders() {
+    return {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Mantle-Key": CLOUD_KEY,
+    };
   }
 
   function unwrapBoard(json) {
-    if (json && json.data && json.data.days) return json.data;
-    if (json && json.days) return json;
+    if (!json) return null;
+    if (json.days) return json;
+    if (json.data && json.data.days) return json.data;
     return null;
   }
 
   function pullCloud(cb) {
-    const id = blobId();
-    if (!id || id === "local") {
-      if (cb) cb(false);
-      return;
-    }
-    fetch(CLOUD + "/" + encodeURIComponent(id), { headers: { Accept: "application/json" } })
+    fetch(CLOUD_URL, { headers: cloudHeaders() })
       .then(function (res) {
         if (!res.ok) throw new Error("cloud");
         return res.json();
@@ -1268,6 +1260,7 @@
         if (!data) throw new Error("cloud");
         const before = boardSig();
         board = mergeBoards(data, board);
+        cloudOk = true;
         saveLocal();
         if (cb) cb(true);
         else if (boardSig() !== before && !busy()) render();
@@ -1277,47 +1270,50 @@
       });
   }
 
+  function runPush() {
+    if (!pushAgain) return Promise.resolve();
+    pushAgain = false;
+    return fetch(CLOUD_URL, { headers: cloudHeaders() })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (json) {
+        const remote = unwrapBoard(json);
+        if (remote) {
+          board = mergeBoards(remote, board);
+          saveLocal();
+        }
+        return fetch(CLOUD_URL, {
+          method: "POST",
+          headers: cloudHeaders(),
+          body: JSON.stringify(board),
+        });
+      })
+      .then(function (res) {
+        if (res && res.ok) cloudOk = true;
+      })
+      .catch(function () {})
+      .then(function () {
+        if (pushAgain) return runPush();
+      });
+  }
+
   function pushCloud() {
-    const id = blobId();
-    if (id && id !== "local") {
-      fetch(CLOUD + "/" + encodeURIComponent(id), { method: "PUT", headers: jsonHeaders(), body: wrapBoard() }).catch(function () {});
-      return;
-    }
-    if (!admin) return;
-    ensureCloud();
+    pushAgain = true;
+    pushChain = pushChain.then(runPush);
+    return pushChain;
   }
 
   function ensureCloud() {
-    return new Promise(function (resolve) {
-      const id = blobId();
-      if (id && id !== "local") {
-        fetch(CLOUD + "/" + encodeURIComponent(id), {
-          method: "PUT",
-          headers: jsonHeaders(),
-          body: wrapBoard(),
-        }).catch(function () {});
-        resolve(id);
-        return;
-      }
-      fetch(CLOUD, { method: "POST", headers: jsonHeaders(), body: wrapBoard() })
-        .then(function (res) {
-          return res.json();
-        })
-        .then(function (json) {
-          if (json && json.id) setBlobId(String(json.id));
-          resolve(json && json.id ? String(json.id) : "");
-        })
-        .catch(function () {
-          resolve("");
-        });
-    });
+    return pushCloud();
   }
 
   function startPoll() {
     clearInterval(poll);
     poll = setInterval(function () {
       pullCloud();
-    }, 8000);
+    }, 5000);
   }
 
   function mount(el, opts) {
@@ -1359,7 +1355,6 @@
     pullCloud(function () {
       render();
     });
-    if (admin && !isShared()) ensureCloud();
     startPoll();
   }
 
@@ -1374,8 +1369,6 @@
   loadLocal();
   const boot = document.getElementById("ziyaret");
   if (boot) {
-    const params = new URLSearchParams(location.search);
-    if (params.get("b")) setBlobId(params.get("b"));
     mount(boot, { admin: false });
   }
 })(window);

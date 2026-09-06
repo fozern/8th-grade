@@ -252,7 +252,7 @@
 
   function fridaysUntilDec() {
     const out = [];
-    const d = new Date(2026, 8, 4);
+    const d = new Date(2026, 7, 28);
     const end = new Date(2026, 11, 25);
     while (d <= end) {
       out.push(iso(d));
@@ -319,6 +319,62 @@
     return out;
   }
 
+  const ISTISARE_AUG28 =
+    "Genel yaklaşım\n" +
+    "• Önümüzdeki hafta kızlarla ilk haftamız olacak.\n" +
+    "• Velilerden, bazı çocuklara farklı davranıldığı ve herkese eşit yaklaşılmadığı yönünde geri bildirimler gelmiş.\n" +
+    "• Tüm çocuklara eşit davranmaya özen gösterelim.\n" +
+    "• Lale ablanın kızı Leyla Yılmaz’a özellikle dikkat edelim.\n" +
+    "• Fotoğraf çekilmesini istemeyen velilerimiz olabileceği için, kızların fotoğraflarını çekmeden önce velilerden izin alalım.\n" +
+    "• ATFA’daki odaları kullanamıyoruz.\n" +
+    "\n" +
+    "İlk hafta pikniği\n" +
+    "• Velilerden potluck usulü ikram getirmelerini rica edeceğiz.\n" +
+    "• Piknik yalnızca öğrencilere özel olacak.\n" +
+    "\n" +
+    "İlk sohbetin konusu\n" +
+    "• Piknikten sonraki ilk abla buluşmasında şu konuları konuşalım:\n" +
+    "    – Efendimiz’i (sav) sevmek\n" +
+    "    – Allah sevgisi\n" +
+    "    – Ablalara neden geliyoruz?\n" +
+    "• Efendimiz (sav) hakkında sohbet ederken:\n" +
+    "    – Bize nasıl şefaatçi olacağını,\n" +
+    "    – Ellerimizin nasıl parlayacağını,\n" +
+    "    – Onun sevgisinin hayatımızdaki yerini anlatalım.\n" +
+    "• Bu konuların çocukların zihninde ve kalbinde yer etmesine özen gösterelim.\n" +
+    "\n" +
+    "Ücret ve alışveriş\n" +
+    "• Her öğrenci için 75 dolar ablalara verilecek ve bu ücret çocukların ihtiyaçları için kullanılacak.\n" +
+    "• Ücretler bize ulaştıktan sonra:\n" +
+    "    – Kitapları sipariş edeceğiz.\n" +
+    "    – MP3 çalarları satın alacağız.\n" +
+    "• Feyza Hocam MP3 çaların modelini bize gönderecek.\n" +
+    "\n" +
+    "İlk hafta aktivitesi\n" +
+    "• İlk haftanın aktivitesi: MP3 çalarları taşlarla süsleme.\n" +
+    "• Çocukları motive etmek için salavat ve şiir etkinlikleri düzenleyelim:\n" +
+    "    – Efendimiz (sav) hakkında en güzel şiiri yazan ilk üç öğrenciye ayrı ayrı hediye verelim.\n" +
+    "    – En çok salavat çeken gruba dondurma gibi bir grup hediyesi verelim.\n" +
+    "\n" +
+    "Çetele ve takip\n" +
+    "• Çetelelerimizi düzenli olarak takip edelim.\n" +
+    "• Her gün çetelemiz üzerinden bütün öğrencilerimize isimleriyle dua edelim.\n" +
+    "• Personalized çetele şablonu:\n" +
+    "  https://drive.google.com/file/d/1vQgdus1zzpWI40vXQVsh490S68mByK3P/view\n" +
+    "  ChatGPT ile aynı template’i kullanarak çocuklara özel çetele yapılabilir.\n" +
+    "\n" +
+    "Veli iletişimi\n" +
+    "• Önümüzdeki haftaya kadar velilerimizi arayıp konuşalım.\n" +
+    "• Her abla en az üç veli araması yapsın.";
+
+  function seedIstisareAug28(data) {
+    if (!data.istisare) data.istisare = {};
+    if (!String(data.istisare["2026-08-28"] || "").trim()) {
+      data.istisare["2026-08-28"] = ISTISARE_AUG28;
+    }
+    data.istisareSeededAug28 = true;
+  }
+
   function defaultState() {
     return {
       lang: "tr",
@@ -329,7 +385,8 @@
       ],
       events: [],
       entries: [],
-      istisare: {},
+      istisare: { "2026-08-28": ISTISARE_AUG28 },
+      istisareSeededAug28: true,
       weeklyGoal: "",
       mentorGoals: {},
       agenda: [],
@@ -542,6 +599,7 @@
       if (!data.gundemNotes) data.gundemNotes = [];
       if (!data.mufredat) data.mufredat = {};
       if (data.googleCal == null) data.googleCal = "";
+      seedIstisareAug28(data);
       return data;
     } catch (e) {
       return defaultState();
@@ -574,7 +632,7 @@
         }
       }
     } catch (e) {}
-    return localStorage.getItem("core-es-veli-url") || siteDir() + "ziyaret.html";
+    return siteDir() + "ziyaret.html";
   }
 
   function ensureVeliNote() {
@@ -654,7 +712,7 @@
   function route() {
     const parts = (location.hash || "#/").replace(/^#/, "").split("/").filter(Boolean);
     const page = parts[0] || "home";
-    if (page === "family" || page === "abla" || page === "cetele" || page === "etkinlikler") {
+    if (page === "family" || page === "abla" || page === "cetele" || page === "etkinlikler" || page === "ideas" || page === "upcoming") {
       return { page: "home" };
     }
     if (page === "rehber") return { page: "rehber", groupId: parts[1] || "asli" };
@@ -765,8 +823,6 @@
       (view.page === "takvim" ? calendarSyncView() : "") +
       (view.page === "ziyaret" ? '<div id="ziyaret-admin"></div>' : "") +
       (view.page === "gundemler" ? gundemView() : "") +
-      (view.page === "upcoming" ? checklistView("work", t("workOn"), t("workPrompt")) : "") +
-      (view.page === "ideas" ? ideasView() : "") +
       (view.page === "rehber" ? contactsView(view.groupId) : "") +
       (view.page === "family" ? familyView() : "") +
       (view.page === "sister" ? sisterView(sister) : "") +
@@ -809,8 +865,6 @@
       navLink("#/mentor", "mentor", t("mentor")) +
       navLink("#/mufredat", "mufredat", t("mufredat")) +
       navLink("#/gundemler", "gundemler", t("agenda")) +
-      navLink("#/upcoming", "upcoming", t("upcoming")) +
-      navLink("#/ideas", "ideas", t("ideas")) +
       navLink("#/rehber/asli", "rehber", t("contacts")) +
       navLink("#/takvim", "takvim", t("calendar")) +
       navLink("#/ziyaret", "ziyaret", t("ziyaret")) +
@@ -1001,12 +1055,14 @@
         return t("weekN") + " " + week.n;
       })() +
       "</b></a>" +
-      '<a class="card jump butter" href="#/upcoming"><span class="quiet">' +
-      t("upcoming") +
+      '<a class="card jump butter" href="#/mentor"><span class="quiet">' +
+      t("mentor") +
       "</span><b>" +
-      state.work.filter(function (x) {
-        return !x.done;
+      WEEKS.filter(function (week) {
+        return state.mentorGoals[week] && state.mentorGoals[week].done;
       }).length +
+      "/" +
+      WEEKS.length +
       "</b></a>" +
       '<a class="card jump sky" href="#/takvim"><span class="quiet">' +
       t("gcal") +
@@ -1036,9 +1092,11 @@
       html +=
         '<section class="week' +
         (week === now ? " now" : "") +
+        (week === "2026-08-28" ? " seeded" : "") +
         '"><div class="week-top"><b>' +
         escapeHtml(formatWeek(week)) +
         "</b>" +
+        (week === "2026-08-28" ? '<span class="week-source">İstişare notları</span>' : "") +
         (week === now ? '<span class="badge">' + t("thisWeek") + "</span>" : "") +
         '</div><textarea data-istisare="' +
         week +
@@ -1677,37 +1735,6 @@
                 '</textarea><button class="btn light tiny" data-del="' +
                 key +
                 '" data-id="' +
-                item.id +
-                '">' +
-                t("delete") +
-                "</button></div>"
-              );
-            })
-            .join("") +
-          "</div>"
-        : '<p class="empty">' + t("emptyList") + "</p>")
-    );
-  }
-
-  function ideasView() {
-    return (
-      "<h2>" +
-      t("ideas") +
-      '</h2><form class="addbar" data-add="ideas"><textarea name="title" rows="1" placeholder="' +
-      t("ideaPrompt") +
-      '" required></textarea><button class="btn pink" type="submit">' +
-      t("add") +
-      "</button></form>" +
-      (state.ideas.length
-        ? '<div class="home-grid">' +
-          state.ideas
-            .map(function (item) {
-              return (
-                '<div class="pin-wrap"><span class="pin"></span><textarea data-title="ideas" data-id="' +
-                item.id +
-                '">' +
-                escapeHtml(item.title) +
-                '</textarea><button class="btn light tiny" data-del="ideas" data-id="' +
                 item.id +
                 '">' +
                 t("delete") +

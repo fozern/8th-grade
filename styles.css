@@ -360,6 +360,22 @@ h2 {
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.week-source {
+  font-family: Caveat, cursive;
+  font-size: 20px;
+  color: #c9785e;
+  font-weight: 600;
+}
+
+.week.seeded {
+  background: #fffaf4;
+}
+
+.week.seeded textarea {
+  min-height: 280px;
 }
 
 .badge {
