@@ -28,7 +28,8 @@
       past: "geçmiş gün",
       full: "Dolu",
       open: "Müsait",
-      pickTime: "Saat seç",
+      pickTime: "3 saatten birini seç",
+      veliSlots: "Veliler bunlardan birini seçer",
       parent: "Veli adı",
       student: "Öğrenci adı",
       phone: "Telefon (isteğe bağlı)",
@@ -36,7 +37,8 @@
       booked: "Kaydın alındı",
       cancelMine: "Kayıdımı sil",
       assign: "Bu günü kime boyayalım?",
-      times: "Saatler",
+      times: "Bu günün 3 saati",
+      hourN: ". saat",
       note: "Gün notu (veliler görür)",
       saveDay: "Günü kaydet",
       clearDay: "Günü kaldır",
@@ -64,6 +66,7 @@
       allFull: "dolu",
       jump: "Ay",
       preparing: "link hazırlanıyor…",
+      saved: "kaydedildi ✓",
     },
     en: {
       title: "Parent visits",
@@ -79,7 +82,8 @@
       past: "past day",
       full: "Full",
       open: "Open",
-      pickTime: "Pick a time",
+      pickTime: "Pick one of the 3 times",
+      veliSlots: "Parents pick one of these",
       parent: "Parent name",
       student: "Student name",
       phone: "Phone (optional)",
@@ -87,7 +91,8 @@
       booked: "You’re booked",
       cancelMine: "Cancel my signup",
       assign: "Who is this day for?",
-      times: "Times",
+      times: "This day's 3 times",
+      hourN: ". time",
       note: "Day note (parents see this)",
       saveDay: "Save day",
       clearDay: "Remove day",
@@ -115,6 +120,7 @@
       allFull: "full",
       jump: "Month",
       preparing: "preparing link…",
+      saved: "saved ✓",
     },
   };
 
@@ -298,9 +304,7 @@
   }
 
   function ensureDay(dateStr, ablaId) {
-    const prev = board.days[dateStr];
-    const switched = prev && prev.abla !== ablaId;
-    if (!prev) {
+    if (!board.days[dateStr]) {
       board.days[dateStr] = {
         abla: ablaId,
         times: (board.times[ablaId] || DEFAULT_TIMES.asli).slice(),
@@ -309,12 +313,68 @@
       };
     } else {
       board.days[dateStr].abla = ablaId;
-      if (switched || !board.days[dateStr].times || !board.days[dateStr].times.length) {
+      if (!board.days[dateStr].times || !board.days[dateStr].times.length) {
         board.days[dateStr].times = (board.times[ablaId] || DEFAULT_TIMES.asli).slice();
       }
       if (!board.days[dateStr].signups) board.days[dateStr].signups = [];
     }
     return board.days[dateStr];
+  }
+
+  function normTime(value) {
+    const m = String(value || "").match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return "";
+    return String(Number(m[1])).padStart(2, "0") + ":" + m[2];
+  }
+
+  function timeChoices(current) {
+    const out = [];
+    let h;
+    let m;
+    for (h = 8; h <= 22; h++) {
+      for (m = 0; m < 60; m += 30) {
+        out.push(String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0"));
+      }
+    }
+    const cur = normTime(current);
+    if (cur && out.indexOf(cur) < 0) out.unshift(cur);
+    return out;
+  }
+
+  function timeSelect(i, value) {
+    const cur = normTime(value);
+    return (
+      '<label class="zv-timesel"><span>' +
+      (i + 1) +
+      t("hourN") +
+      '</span><select data-zv-edit-time="' +
+      i +
+      '">' +
+      timeChoices(cur)
+        .map(function (tm) {
+          return '<option value="' + tm + '"' + (tm === cur ? " selected" : "") + ">" + tm + "</option>";
+        })
+        .join("") +
+      "</select></label>"
+    );
+  }
+
+  function adminTimesHtml(day) {
+    const editTimes = (day.times && day.times.length ? day.times : ["10:00", "11:00", "12:00"]).slice();
+    while (editTimes.length < 3) editTimes.push("16:00");
+    return (
+      '<p class="zv-lab">' +
+      t("times") +
+      '</p><div class="zv-timegrid">' +
+      editTimes
+        .map(function (time, i) {
+          return timeSelect(i, time);
+        })
+        .join("") +
+      '</div><button type="button" class="btn light tiny" id="zv-add-time">' +
+      t("addTime") +
+      "</button>"
+    );
   }
 
   function taken(dateStr, time) {
@@ -646,10 +706,11 @@
               "</button>"
             );
           }).join("") +
-          "</div>"
+          "</div>" +
+          adminTimesHtml(day)
         : "") +
       '<p class="zv-lab">' +
-      t("pickTime") +
+      (admin ? t("veliSlots") : t("pickTime")) +
       '</p><div class="zv-slots">';
     (day.times || []).forEach(function (time) {
       const count = taken(selected, time);
@@ -680,25 +741,13 @@
     html += "</div>";
     if (admin) {
       html +=
-        '<div class="zv-edit"><p class="zv-lab">' +
-        t("times") +
-        "</p>" +
-        (day.times || [])
-          .map(function (time, i) {
-            return '<input type="time" data-zv-edit-time="' + i + '" value="' + esc(time) + '" />';
-          })
-          .join("") +
-        '<button type="button" class="btn light tiny" id="zv-add-time">' +
-        t("addTime") +
-        '</button><label class="field"><span>' +
+        '<label class="field" style="margin-top:12px"><span>' +
         t("note") +
         '</span><input id="zv-note" value="' +
         esc(day.note || "") +
-        '" /></label><div class="row"><button type="button" class="btn" id="zv-save-day">' +
-        t("saveDay") +
-        '</button><button type="button" class="btn light" id="zv-clear-day">' +
+        '" /></label><div class="row" style="margin-top:8px"><button type="button" class="btn light" id="zv-clear-day">' +
         t("clearDay") +
-        "</button></div></div>";
+        "</button></div>";
       (day.signups || []).forEach(function (s) {
         html +=
           '<div class="item"><div><b>' +
@@ -774,7 +823,19 @@
           "</b>" +
           [0, 1, 2]
             .map(function (i) {
-              return '<input type="time" data-zv-def="' + a.id + '" data-i="' + i + '" value="' + esc(times[i] || "") + '" />';
+              return (
+                '<select data-zv-def="' +
+                a.id +
+                '" data-i="' +
+                i +
+                '">' +
+                timeChoices(times[i])
+                  .map(function (tm) {
+                    return '<option value="' + tm + '"' + (tm === normTime(times[i]) ? " selected" : "") + ">" + tm + "</option>";
+                  })
+                  .join("") +
+                "</select>"
+              );
             })
             .join("") +
           "</div>"
@@ -944,6 +1005,7 @@
     });
     host.querySelectorAll("[data-zv-time]").forEach(function (btn) {
       btn.onclick = function () {
+        if (admin) return;
         pickedTime = btn.getAttribute("data-zv-time");
         render();
       };
@@ -1006,28 +1068,15 @@
         if (!day) return;
         const times = [];
         host.querySelectorAll("[data-zv-edit-time]").forEach(function (box) {
-          if (box.value) times.push(box.value);
+          const val = normTime(box.value);
+          if (val) times.push(val);
         });
         if (times.length) day.times = times;
         persist();
+        toast(t("saved"));
+        render();
       };
     });
-    const saveDay = host.querySelector("#zv-save-day");
-    if (saveDay) {
-      saveDay.onclick = function () {
-        const day = dayOf(selected);
-        if (!day) return;
-        const times = [];
-        host.querySelectorAll("[data-zv-edit-time]").forEach(function (input) {
-          if (input.value) times.push(input.value);
-        });
-        if (times.length) day.times = times;
-        const note = host.querySelector("#zv-note");
-        day.note = note ? note.value : "";
-        persist();
-        toast(t("saveDay"));
-      };
-    }
     const addTime = host.querySelector("#zv-add-time");
     if (addTime) {
       addTime.onclick = function () {
